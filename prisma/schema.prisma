@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum UserRole {
+  ADMIN
+  AFFILIATE
+  BRAND
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum OfferType {
+  CPA
+  REVSHARE
+  HYBRID
+}
+
+enum OfferStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum ConversionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TransactionType {
+  COMMISSION
+  ADJUSTMENT
+  PAYOUT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TrafficSource {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  FACEBOOK
+  BLOG
+  OTHER
+}
+
+//////////////////////////////////////////////////////
+// USERS
+//////////////////////////////////////////////////////
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  name      String?
+  country   String?
+  phone     String?
+  address   String?
+  stateRegion  String?
+  City      String?
+  trafficSource String?
+  trafficSourceUrl String?
+
+  firstName  String?
+  lastName   String?
+  handle     String?    @unique
+  bio        String?
+  avatarUrl  String?
+  avatar     String?
+
+  role UserRole @default(AFFILIATE)
+  status    UserStatus @default(PENDING)
+
+  createdAt DateTime   @default(now())
+  adminLogs      AdminLog[]
+
+  affiliateLinks AffiliateLink[]
+  clicks         Click[]
+  conversions    Conversion[]
+  wallet         Wallet? 
+  
+}
+
+//////////////////////////////////////////////////////
+// WALLET (PROFESSIONAL)
+//////////////////////////////////////////////////////
+
+model Wallet {
+  id     Int @id @default(autoincrement())
+  userId Int @unique
+
+  availableBalance Float @default(0)
+  pendingBalance   Float @default(0)
+  totalEarned      Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+//////////////////////////////////////////////////////
+// TRANSACTION LEDGER
+//////////////////////////////////////////////////////
+
+model Transaction {
+  id       Int               @id @default(autoincrement())
+  walletId Int
+  amount   Float
+  type     TransactionType
+  status   TransactionStatus @default(PENDING)
+
+  referenceId Int? // conversionId أو payoutId
+  description String?
+
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// BRANDS
+//////////////////////////////////////////////////////
+
+model Brand {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  offers Offer[]
+}
+
+//////////////////////////////////////////////////////
+// OFFERS
+//////////////////////////////////////////////////////
+
+model Offer {
+  id          Int         @id @default(autoincrement())
+  name        String
+  type        OfferType
+  status      OfferStatus @default(ACTIVE)
+  autoApprove Boolean     @default(false)
+
+  // CPA
+  cpaAmount Float?
+
+  // RevShare %
+  revsharePercentage Float?
+
+  // Hybrid
+  hybridCpaAmount       Float?
+  hybridRevsharePercent Float?
+
+  brandId Int
+  brand   Brand @relation(fields: [brandId], references: [id])
+
+  affiliateLinks AffiliateLink[]
+  clicks         Click[]
+  conversions    Conversion[]
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////
+// AdminLog
+//////////////////////////////////////////////////////
+
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  action     String
+  targetUser Int?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// AFFILIATE LINKS
+//////////////////////////////////////////////////////
+
+model AffiliateLink {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+
+  userId  Int
+  offerId Int
+
+  user  User  @relation(fields: [userId], references: [id])
+  offer Offer @relation(fields: [offerId], references: [id])
+
+  clicks      Click[]
+  conversions Conversion[]
+}
+
+//////////////////////////////////////////////////////
+// CLICKS
+//////////////////////////////////////////////////////
+
+model Click {
+  id              Int    @id @default(autoincrement())
+  clickId         String @unique
+  affiliateLinkId Int
+  offerId         Int
+  userId          Int
+
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
+  createdAt DateTime @default(now())
+
+  affiliateLink AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
+  offer         Offer         @relation(fields: [offerId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  conversions   Conversion[]
+}
+
+//////////////////////////////////////////////////////
+// CONVERSIONS
+//////////////////////////////////////////////////////
+
+model Conversion {
+  id              Int      @id @default(autoincrement())
+
+  clickId         String
+  clickDbId       Int      // 🔥 هذا هو المفتاح الحقيقي
+
+  affiliateLinkId Int
+  offerId         Int
+  userId          Int
+
+  revenue         Float?
+  commission      Float
+  status          ConversionStatus @default(PENDING)
+
+  createdAt       DateTime @default(now())
+
+  click           Click          @relation(fields: [clickDbId], references: [id])
+  affiliateLink   AffiliateLink  @relation(fields: [affiliateLinkId], references: [id])
+  offer           Offer          @relation(fields: [offerId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+}
