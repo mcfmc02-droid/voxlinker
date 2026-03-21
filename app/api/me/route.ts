@@ -1,29 +1,25 @@
-import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import jwt from "jsonwebtoken"
+import { prisma } from "@/lib/prisma"
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const cookieHeader = req.headers.get("cookie");
 
-    if (!cookieHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const tokenMatch = cookieHeader
-      .split("; ")
-      .find((row) => row.startsWith("token="));
-
-    const token = tokenMatch?.split("=")[1];
+    const cookieStore = await cookies()
+    const token = cookieStore.get("token")?.value
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as { userId: number };
+    let decoded: { userId: number }
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number }
+    } catch {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -35,23 +31,25 @@ export async function GET(req: Request) {
         bio: true,
         avatarUrl: true,
         status: true,
-        role: true, // ✅ أضفنا role
-      },
-    });
+        role: true
+      }
+    })
 
     if (!user) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     if (user.status === "PENDING") {
-      return NextResponse.json({ error: "PENDING" }, { status: 403 });
+      return NextResponse.json({ error: "PENDING" }, { status: 403 })
     }
 
     if (user.status === "SUSPENDED") {
-      return NextResponse.json({ error: "SUSPENDED" }, { status: 403 });
+      return NextResponse.json({ error: "SUSPENDED" }, { status: 403 })
     }
 
-    // ✅ تحويل البيانات لتطابق صفحة Settings
+    const [firstName = "", ...rest] = (user.name || "").split(" ")
+    const lastName = rest.join(" ")
+
     const formattedUser = {
       id: user.id,
       email: user.email,
@@ -60,13 +58,19 @@ export async function GET(req: Request) {
       handle: user.handle,
       bio: user.bio,
       avatar: user.avatarUrl,
-      firstName: user.name?.split(" ")[0] || "",
-      lastName: user.name?.split(" ").slice(1).join(" ") || "",
-    };
+      firstName,
+      lastName
+    }
 
-    return NextResponse.json({ user: formattedUser });
+    return NextResponse.json({ user: formattedUser })
 
-  } catch {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  } catch (error) {
+
+    console.error("ME API ERROR:", error)
+
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    )
   }
 }

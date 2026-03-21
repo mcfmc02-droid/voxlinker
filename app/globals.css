@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes floatY{
+0%{transform:translateY(0)}
+50%{transform:translateY(-10px)}
+100%{transform:translateY(0)}
+}
+
+@keyframes floatX{
+0%{transform:translateX(0)}
+50%{transform:translateX(8px)}
+100%{transform:translateX(0)}
+}
+
+.nav-link{
+  @apply text-[14.5px] font-medium text-gray-600 tracking-[0.03em] transition-all duration-200;
+}
+
+.nav-link:hover{
+  @apply text-[#ff9a6c];
+}
+
+.mobile-link{
+  @apply block text-gray-600 text-sm font-medium transition;
+}
+
+.mobile-link:hover{
+  @apply text-black;
+}

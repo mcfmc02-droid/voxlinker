@@ -8,6 +8,7 @@ import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { Country } from "country-state-city";
 import zxcvbn from "zxcvbn";
+import Link from "next/link"
 
 type CountryOption = {
   value: string;
@@ -37,61 +38,206 @@ export default function Register() {
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("us");
+  const [emailStatus, setEmailStatus] = useState<
+  "idle" | "checking" | "valid" | "invalid" | "exists"
+>("idle")
+const [suggestion, setSuggestion] = useState<string | null>(null);
 
   const passwordStrength = zxcvbn(password);
 
-  const handleNext = () => {
-    if (!email || !password) {
-      setError("Please complete all required fields.");
-      return;
-    }
-    setError("");
-    setStep(2);
+  const isValidEmail = (email: string) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const emailFix = (email: string) => {
+  const fixes: any = {
+    "gmial.com": "gmail.com",
+    "gmal.com": "gmail.com",
+    "gmail.con": "gmail.com",
+    "yaho.com": "yahoo.com",
   };
 
-  const handleSubmit = async () => {
-    if (
-      !email ||
-      !password ||
-      !firstName ||
-      !lastName ||
-      !country ||
-      !phone ||
-      !address ||
-      !stateRegion ||
-      !city ||
-      !trafficSource ||
-      !trafficUrl ||
-      !agree
-    ) {
-      setError("Please fill all fields and accept the terms.");
-      return;
-    }
+  const parts = email.split("@");
+  if (parts.length !== 2) return null;
 
-    setError("");
-    setLoading(true);
+  const domain = parts[1];
 
-    await fetch("/api/register", {
+  if (fixes[domain]) {
+    return `${parts[0]}@${fixes[domain]}`;
+  }
+
+  return null;
+};
+
+  const checkEmail = async () => {
+  try {
+    const res = await fetch("/api/check-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        email,
-        password,
-        firstName,
-        lastName,
-        country: country.value,
-        phone,
-        address,
-        stateRegion,
-        city,
-        trafficSource,
-        trafficUrl,
-      }),
+      body: JSON.stringify({ email }),
     });
 
-    router.push("/dashboard");
-  };
+    if (!res.ok) return false;
+
+    const data = await res.json();
+
+    return data.exists;
+  } catch (err) {
+    console.error("Email check error:", err);
+    return false;
+  }
+};
+
+  const handleNext = async () => {
+  if (!email || !password) {
+    setError("Please complete all required fields.");
+    return;
+  }
+
+  // ✅ التحقق من صيغة الإيميل
+  if (!isValidEmail(email)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
+
+  // ✅ قوة الباسورد
+  if (passwordStrength.score < 2) {
+    setError("Please choose a stronger password.");
+    return;
+  }
+
+  setLoading(true);
+
+  // ✅ إذا عندك system real-time (emailStatus)
+  if (emailStatus === "exists") {
+    setError("This email is already registered.");
+    setLoading(false);
+    return;
+  }
+
+  if (emailStatus === "invalid") {
+    setError("Invalid email format.");
+    setLoading(false);
+    return;
+  }
+
+  if (emailStatus !== "valid") {
+  setError("Please enter a valid and available email.");
+  return;
+}
+
+  // ✅ fallback check (في حالة debounce ما اشتغل)
+  const exists = await checkEmail();
+
+  if (exists) {
+    setError("This email is already registered.");
+    setLoading(false);
+    return;
+  }
+
+  setError("");
+  setLoading(false);
+  setStep(2);
+};
+
+  const handleSubmit = async () => {
+  if (
+    !email ||
+    !password ||
+    !firstName ||
+    !lastName ||
+    !country ||
+    !phone ||
+    !address ||
+    !stateRegion ||
+    !city ||
+    !trafficSource ||
+    !trafficUrl ||
+    !agree
+  ) {
+    setError("Please fill all fields and accept the terms.");
+    return;
+  }
+
+  // URL validation (يحافظ على نفس الحقل)
+  if (!trafficUrl.startsWith("http")) {
+    setError("Please enter a valid URL (must start with http or https).");
+    return;
+  }
+
+  setError("");
+  setLoading(true);
+
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      email,
+      password,
+      firstName,
+      lastName,
+      country: country.value,
+      phone,
+      address,
+      stateRegion,
+      city,
+      trafficSource, // كما هو (لا نكسر)
+      trafficUrl,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    setError(data.error || "Registration failed");
+    setLoading(false);
+    return;
+  }
+
+  // ✅ التصحيح المطلوب
+  router.push("/pending");
+};
+
+let emailTimeout: any;
+
+const handleEmailChange = (value: string) => {
+  setEmail(value);
+  const fix = emailFix(value);
+setSuggestion(fix);
+
+  clearTimeout(emailTimeout);
+
+  // تحقق من الفورمات
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    setEmailStatus("invalid");
+    return;
+  }
+
+  setEmailStatus("checking");
+
+  // Debounce (نستنى المستخدم يوقف الكتابة)
+  emailTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch("/api/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+
+      const data = await res.json();
+
+      if (data.exists) {
+        setEmailStatus("exists");
+      } else {
+        setEmailStatus("valid");
+      }
+    } catch {
+      setEmailStatus("idle");
+    }
+  }, 600);
+};
 
   const inputStyle =
     "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffb48a]/40 focus:border-[#ff9a6c] transition-all duration-200";
@@ -132,10 +278,17 @@ export default function Register() {
 
           <div className="text-center mb-10">
             <div className="text-3xl font-semibold tracking-tight">
-              <span className="text-gray-800">My</span>
-              <span className="bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] bg-clip-text text-transparent">
-                Platform
-              </span>
+              {/* ================= LOGO ================= */}
+
+<div className="flex justify-center">
+  <Link href="/" className="flex items-center justify-center">
+    <img
+      src="/logo.svg"
+      alt="VoxLinker"
+      className="h-10 w-auto"
+    />
+  </Link>
+</div>
             </div>
           </div>
 
@@ -159,12 +312,56 @@ export default function Register() {
                 <h2 className="text-xl font-semibold">Account Information</h2>
 
                 <input
-                  type="email"
-                  placeholder="Email Address"
-                  className={inputStyle}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+  type="email"
+  placeholder="Email Address"
+  className={`${inputStyle} ${
+    emailStatus === "invalid" || emailStatus === "exists"
+      ? "border-red-400"
+      : emailStatus === "valid"
+      ? "border-green-400"
+      : ""
+  }`}
+  value={email}
+  onChange={(e) => {
+    const value = e.target.value;
+    setEmail(value);
+    handleEmailChange(value);
+  }}
+/>
+
+{emailStatus === "checking" && (
+  <p className="text-xs text-gray-400 mt-1">Checking email...</p>
+)}
+
+{emailStatus === "invalid" && (
+  <p className="text-xs text-red-500 mt-1">Invalid email format</p>
+)}
+
+{emailStatus === "exists" && (
+  <p className="text-xs text-red-500 mt-1">Email already exists</p>
+)}
+
+{emailStatus === "valid" && (
+  <p className="text-xs text-green-500 mt-1">Email is available ✓</p>
+)}
+
+{suggestion && (
+  <p className="text-xs text-gray-500 mt-1">
+    Did you mean{" "}
+    <span
+      className="text-[#ff9a6c] cursor-pointer"
+      onClick={() => {
+  setEmail(suggestion);
+  setSuggestion(null);
+  handleEmailChange(suggestion);
+  setError(""); // تنظيف أي خطأ قديم
+}}
+    >
+      {suggestion}
+    </span>
+    ?
+  </p>
+)}
 
                 <div>
                   <input
@@ -237,19 +434,34 @@ export default function Register() {
                 </div>
 
                 <Select
-                  options={countries}
-                  placeholder="Select a country"
-                  value={country}
-                  onChange={(selected) => setCountry(selected)}
-                  maxMenuHeight={200}
-                />
+  options={countries}
+  placeholder="Select a country"
+  value={country}
+  onChange={(selected) => {
+    setCountry(selected);
 
+    // تحويل اسم الدولة إلى ISO2
+    const found = Country.getAllCountries().find(
+      (c) => c.name === selected?.value
+    );
+
+    if (found?.isoCode) {
+      setCountryCode(found.isoCode.toLowerCase());
+    }
+  }}
+  maxMenuHeight={200}
+/>
                 <PhoneInput
-                  country={"us"}
-                  value={phone}
-                  onChange={(value) => setPhone(value)}
-                  inputStyle={{ width: "100%", height: "48px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
-                />
+  country={countryCode}
+  value={phone}
+  onChange={(value) => setPhone(value)}
+  inputStyle={{
+    width: "100%",
+    height: "48px",
+    borderRadius: "12px",
+    border: "1px solid #e5e7eb"
+  }}
+/>
 
                 <input
                   type="text"
@@ -287,6 +499,7 @@ export default function Register() {
                   <option value="YouTube">YouTube</option>
                   <option value="Facebook">Facebook</option>
                   <option value="Blog">Blog</option>
+                  <option value="Other">Other</option>
                 </select>
 
                 {trafficSource && (

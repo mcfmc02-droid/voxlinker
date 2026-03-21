@@ -30,7 +30,7 @@ export default function PendingPage() {
 
         <button
           onClick={() => router.push("/login")}
-          className="bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white px-6 py-3 rounded-xl hover:shadow-lg transition"
+          className="bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white px-6 py-3 rounded-xl hover:shadow-lg transition cursor-pointer"
         >
           Back to Login
         </button>

@@ -14,6 +14,7 @@ datasource db {
 enum UserRole {
   ADMIN
   AFFILIATE
+  CREATOR
   BRAND
 }
 
@@ -54,6 +55,18 @@ enum TransactionStatus {
   REJECTED
 }
 
+enum CommissionType {
+  PERCENTAGE
+  FIXED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
 enum TrafficSource {
   INSTAGRAM
   TIKTOK
@@ -63,45 +76,92 @@ enum TrafficSource {
   OTHER
 }
 
+enum PayoutType {
+  PAYPAL
+  BANK
+  CRYPTO
+}
+
+enum TaxFormType {
+  W8BEN
+  W9
+}
+
+enum TaxStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BatchStatus {
+  PENDING
+  SENT
+  COMPLETED
+}
+
 //////////////////////////////////////////////////////
 // USERS
 //////////////////////////////////////////////////////
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  password  String
-  name      String?
-  country   String?
-  phone     String?
-  address   String?
-  stateRegion  String?
-  City      String?
-  trafficSource String?
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+
+  name    String?
+  country String?
+
+  publisherId String? @unique
+  apiKey      String? @unique
+  apiToken  String?  @unique
+  sessionToken String? @unique
+
+  phone   String?
+  address String?
+
+  stateRegion String?
+  city        String?
+
+  trafficSource    String?
   trafficSourceUrl String?
 
-  firstName  String?
-  lastName   String?
-  handle     String?    @unique
-  bio        String?
-  avatarUrl  String?
-  avatar     String?
+  firstName String?
+  lastName  String?
 
-  role UserRole @default(AFFILIATE)
-  status    UserStatus @default(PENDING)
+  handle String? @unique
 
-  createdAt DateTime   @default(now())
-  adminLogs      AdminLog[]
+  bio       String?
+  avatarUrl String?
+  avatar    String?
 
-  affiliateLinks AffiliateLink[]
-  clicks         Click[]
-  conversions    Conversion[]
-  wallet         Wallet? 
-  
+  referralCode String? @unique
+  referredBy   Int?
+
+  referrer   User?  @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals  User[] @relation("UserReferrals")
+
+  role   UserRole   @default(AFFILIATE)
+  status UserStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  adminLogs              AdminLog[]
+  withdrawals            Withdrawal[]
+  affiliateLinks         AffiliateLink[]
+  clicks                 Click[]
+  conversions            Conversion[]
+  wallet                 Wallet?
+  paymentMethods         PaymentMethod[]
+  taxForms               TaxForm[]
+  affiliateBrandStatuses AffiliateBrandStatus[]
+  commissionOverrides    CommissionOverride[]
+  creatorCampaigns       CreatorCampaign[]
+  favorites              FavoriteBrand[]
+  apiTokens              ApiToken[]
 }
 
 //////////////////////////////////////////////////////
-// WALLET (PROFESSIONAL)
+// WALLET
 //////////////////////////////////////////////////////
 
 model Wallet {
@@ -110,13 +170,66 @@ model Wallet {
 
   availableBalance Float @default(0)
   pendingBalance   Float @default(0)
-  totalEarned      Float @default(0)
+
+  totalEarned Float @default(0)
+
+  withdrawnAmount Float @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id])
   transactions Transaction[]
+  withdrawals  Withdrawal[]
+}
+
+//////////////////////////////////////////////////////
+// WITHDRAWALS
+//////////////////////////////////////////////////////
+
+model Withdrawal {
+  id Int @id @default(autoincrement())
+
+  userId   Int
+  walletId Int
+  batchId  Int?
+
+  amount    Float
+  netAmount Float
+
+  taxAmount Float @default(0)
+
+  status WithdrawalStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  user   User         @relation(fields: [userId], references: [id])
+  wallet Wallet       @relation(fields: [walletId], references: [id])
+  batch  PayoutBatch? @relation(fields: [batchId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// TAX
+//////////////////////////////////////////////////////
+
+model TaxForm {
+  id Int @id @default(autoincrement())
+
+  userId   Int
+  formType TaxFormType
+  status   TaxStatus   @default(PENDING)
+
+  country String
+  taxId   String?
+
+  fileUrl String
+
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 //////////////////////////////////////////////////////
@@ -124,18 +237,26 @@ model Wallet {
 //////////////////////////////////////////////////////
 
 model Transaction {
-  id       Int               @id @default(autoincrement())
+  id       Int @id @default(autoincrement())
   walletId Int
-  amount   Float
-  type     TransactionType
-  status   TransactionStatus @default(PENDING)
 
-  referenceId Int? // conversionId أو payoutId
+  amount Float
+
+  type   TransactionType
+  status TransactionStatus @default(PENDING)
+
+  referenceId   Int?
+  referenceType String?
+
   description String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([status])
 }
 
 //////////////////////////////////////////////////////
@@ -143,46 +264,396 @@ model Transaction {
 //////////////////////////////////////////////////////
 
 model Brand {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
 
+  id      Int     @id @default(autoincrement())
+  name    String
+  slug    String  @unique
+
+  logoUrl     String?
+  websiteUrl  String?
+  description String?
+
+  // Status
+  status OfferStatus @default(ACTIVE)
+
+  // Commission
+  commissionType CommissionType 
+  defaultCommission Float?
+
+  // Tracking
+  cookieDays Int @default(30)
+
+  // Performance metrics
+  epc Float?           // Earnings per click
+  conversionRate Float?
+
+  // Display flags
+  isFeatured Boolean @default(false)
+  isTrending Boolean @default(false)
+  isNew Boolean @default(false)
+
+  // Limits
+  approvalRequired Boolean @default(false)
+
+  // Meta
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  categories BrandCategory[]
+  affiliateStatuses AffiliateBrandStatus[]
   offers Offer[]
+  favorites FavoriteBrand[]
+
 }
 
 //////////////////////////////////////////////////////
-// OFFERS
+// BRAND CATEGORY
 //////////////////////////////////////////////////////
 
-model Offer {
-  id          Int         @id @default(autoincrement())
-  name        String
-  type        OfferType
-  status      OfferStatus @default(ACTIVE)
-  autoApprove Boolean     @default(false)
+model BrandCategory {
+  id Int @id @default(autoincrement())
 
-  // CPA
-  cpaAmount Float?
+  name String
+  slug String
 
-  // RevShare %
-  revsharePercentage Float?
+  commissionRate Float
 
-  // Hybrid
-  hybridCpaAmount       Float?
-  hybridRevsharePercent Float?
+  cookieDays Int @default(30)
+
+  status OfferStatus @default(ACTIVE)
 
   brandId Int
   brand   Brand @relation(fields: [brandId], references: [id])
 
+  commissionOverrides CommissionOverride[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([slug, brandId])
+}
+
+//////////////////////////////////////////////////////
+// Affiliate Brand Status
+//////////////////////////////////////////////////////
+
+model AffiliateBrandStatus {
+  id Int @id @default(autoincrement())
+
+  userId  Int
+  brandId Int
+
+  isBlocked Boolean @default(false)
+  reason    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([userId, brandId])
+}
+
+//////////////////////////////////////////////////////
+// Commission Over ride
+//////////////////////////////////////////////////////
+
+model CommissionOverride {
+  id Int @id @default(autoincrement())
+
+  userId     Int
+  categoryId Int
+
+  customRate Float
+
+  user     User          @relation(fields: [userId], references: [id])
+  category BrandCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId])
+}
+
+//////////////////////////////////////////////////////
+// OFFER
+//////////////////////////////////////////////////////
+
+model Offer {
+  id Int @id @default(autoincrement())
+
+  name String
+  description String?
+
+  landingUrl String?
+  logoUrl String?
+
+  domain String?
+
+  status OfferStatus @default(ACTIVE)
+
+  offerType OfferType
+  commissionValue Float
+
+  cookieDays Int @default(30)
+
+  brandId Int
+  brand Brand @relation(fields: [brandId], references: [id])
+
   affiliateLinks AffiliateLink[]
-  clicks         Click[]
-  conversions    Conversion[]
+  clicks Click[]
+  conversions Conversion[]
 
   createdAt DateTime @default(now())
 }
 
 //////////////////////////////////////////////////////
-// AdminLog
+// AFFILIATE LINK
+//////////////////////////////////////////////////////
+
+model AffiliateLink {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+
+  userId  Int
+  offerId Int
+
+  originalUrl String?
+  campaignName String?
+
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  offer Offer @relation(fields: [offerId], references: [id])
+
+  clicks      Click[]
+  conversions Conversion[]
+
+  @@index([userId])
+  @@index([offerId])
+}
+
+//////////////////////////////////////////////////////
+// CLICK TRACKING + ANTI FRAUD
+//////////////////////////////////////////////////////
+
+model Click {
+  id      Int    @id @default(autoincrement())
+  clickId String @unique
+
+  affiliateLinkId Int
+  offerId         Int
+  userId          Int
+
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
+  sub1      String?
+  sub2      String?
+  sub3      String?
+  sub4      String?
+  sub5      String?
+
+  country String?
+  city    String?
+
+  device  String?
+  browser String?
+  os      String?
+
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+
+  fingerprint String?
+  sessionId   String?
+
+  isBot       Boolean @default(false)
+  isDuplicate Boolean @default(false)
+
+  fraudScore Float @default(0)
+
+  blocked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  affiliateLink AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
+  offer         Offer         @relation(fields: [offerId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  conversions Conversion[]
+
+  fraudLogs FraudLog[]
+
+  @@index([offerId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+//////////////////////////////////////////////////////
+// CONVERSION
+//////////////////////////////////////////////////////
+
+model Conversion {
+  id Int @id @default(autoincrement())
+
+  clickId   String
+  clickDbId Int
+
+  affiliateLinkId Int
+  offerId         Int
+  userId          Int
+
+  orderId String @unique
+  currency String?
+
+  revenue Float?
+
+  commission Float?
+
+  status ConversionStatus @default(PENDING)
+
+  createdAt  DateTime  @default(now())
+  approvedAt DateTime?
+
+  click         Click         @relation(fields: [clickDbId], references: [id])
+  affiliateLink AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
+  offer         Offer         @relation(fields: [offerId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+//////////////////////////////////////////////////////
+// FRAUD LOG
+//////////////////////////////////////////////////////
+
+model FraudLog {
+  id Int @id @default(autoincrement())
+
+  clickId Int
+  reason  String
+  score   Float
+
+  createdAt DateTime @default(now())
+
+  click Click @relation(fields: [clickId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// PAYMENT METHODS
+//////////////////////////////////////////////////////
+
+model PaymentMethod {
+  id            Int        @id @default(autoincrement())
+  userId        Int        @unique
+  type          PayoutType
+  paypalEmail   String?
+  accountHolder String?
+  status        String     @default("NOT_CONNECTED")
+  createdAt     DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  
+
+}
+
+//////////////////////////////////////////////////////
+// PAYOUT BATCH
+//////////////////////////////////////////////////////
+
+model PayoutBatch {
+  id Int @id @default(autoincrement())
+
+  totalAmount Float
+
+  status BatchStatus
+
+  createdAt DateTime @default(now())
+
+  withdrawals Withdrawal[]
+}
+
+//////////////////////////////////////////////////////
+// model Postback 
+//////////////////////////////////////////////////////
+
+model PostbackLog {
+  id        Int      @id @default(autoincrement())
+  clickId   String?
+  orderId   String?
+  ip        String?
+  status    String
+  createdAt DateTime @default(now())
+}
+//////////////////////////////////////////////////////
+// model Campaign
+//////////////////////////////////////////////////////
+
+model Campaign {
+  id        Int      @id @default(autoincrement())
+  name      String
+  budget    Float
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+
+  creators  CreatorCampaign[]
+}
+
+//////////////////////////////////////////////////////
+// model Creator Campaign
+//////////////////////////////////////////////////////
+
+model CreatorCampaign {
+  id         Int      @id @default(autoincrement())
+
+  creatorId  Int
+  campaignId Int
+
+  creator    User     @relation(fields: [creatorId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  joinedAt   DateTime @default(now())
+
+  @@unique([creatorId, campaignId])
+}
+
+//////////////////////////////////////////////////////
+// Favorite Brand
+//////////////////////////////////////////////////////
+
+model FavoriteBrand {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  brandId   Int
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([userId, brandId])
+}
+
+//////////////////////////////////////////////////////
+// model Api Token
+//////////////////////////////////////////////////////
+
+model ApiToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  name      String?
+  userId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+//////////////////////////////////////////////////////
+// ADMIN LOG
 //////////////////////////////////////////////////////
 
 model AdminLog {
@@ -194,71 +665,4 @@ model AdminLog {
   createdAt  DateTime @default(now())
 
   admin User @relation(fields: [adminId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// AFFILIATE LINKS
-//////////////////////////////////////////////////////
-
-model AffiliateLink {
-  id   Int    @id @default(autoincrement())
-  code String @unique
-
-  userId  Int
-  offerId Int
-
-  user  User  @relation(fields: [userId], references: [id])
-  offer Offer @relation(fields: [offerId], references: [id])
-
-  clicks      Click[]
-  conversions Conversion[]
-}
-
-//////////////////////////////////////////////////////
-// CLICKS
-//////////////////////////////////////////////////////
-
-model Click {
-  id              Int    @id @default(autoincrement())
-  clickId         String @unique
-  affiliateLinkId Int
-  offerId         Int
-  userId          Int
-
-  ipAddress String?
-  userAgent String?
-  referrer  String?
-
-  createdAt DateTime @default(now())
-
-  affiliateLink AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
-  offer         Offer         @relation(fields: [offerId], references: [id])
-  user          User          @relation(fields: [userId], references: [id])
-  conversions   Conversion[]
-}
-
-//////////////////////////////////////////////////////
-// CONVERSIONS
-//////////////////////////////////////////////////////
-
-model Conversion {
-  id              Int      @id @default(autoincrement())
-
-  clickId         String
-  clickDbId       Int      // 🔥 هذا هو المفتاح الحقيقي
-
-  affiliateLinkId Int
-  offerId         Int
-  userId          Int
-
-  revenue         Float?
-  commission      Float
-  status          ConversionStatus @default(PENDING)
-
-  createdAt       DateTime @default(now())
-
-  click           Click          @relation(fields: [clickDbId], references: [id])
-  affiliateLink   AffiliateLink  @relation(fields: [affiliateLinkId], references: [id])
-  offer           Offer          @relation(fields: [offerId], references: [id])
-  user            User           @relation(fields: [userId], references: [id])
 }

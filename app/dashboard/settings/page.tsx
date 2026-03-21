@@ -2,6 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Lock, Loader2 } from "lucide-react"
+import { User } from "lucide-react"
+
+import {
+  PageTitle,
+  PageSubtitle,
+  SectionTitle,
+  FormLabel,
+  HelperText,
+
+} from "@/components/ui/dashboard/Typography"
 
 type User = {
   id: number
@@ -32,6 +43,23 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [toast, setToast] = useState<string | null>(null)
+
+  const [deletePassword, setDeletePassword] = useState("")
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const [accountDeleted, setAccountDeleted] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deletionSuccess, setDeletionSuccess] = useState(false)
+
+  useEffect(() => {
+    if (deletionSuccess) {
+      const timer = setTimeout(() => {
+        window.location.replace("/account-deleted")
+      }, 1200)
+
+      return () => clearTimeout(timer)
+    }
+  }, [deletionSuccess])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -116,15 +144,53 @@ export default function SettingsPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setToast("Please enter your password to confirm deletion")
+      return
+    }
+
+    setDeleting(true)
+
+    try {
+      const res = await fetch("/api/user/delete-account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: deletePassword }),
+      })
+
+      if (res.ok) {
+        window.location.href = "/account-deleted"
+        return
+      }
+
+      const data = await res.json().catch(() => null)
+      setToast(data?.error || "Something went wrong.")
+      setDeleting(false)
+
+    } catch {
+      setToast("Server error. Please try again.")
+      setDeleting(false)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading...</div>
   if (!user) return null
 
+  function capitalize(name?: string) {
+  if (!name) return ""
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
   return (
-    <div className="pt-6 pb-10 px-10 max-w-5xl mx-auto">
+    <div className="pt-1 pb-10 px-10 max-w-5xl mx-auto">
 
-      <h1 className="text-3xl font-semibold mb-6 tracking-tight">Account Settings</h1>
+      <PageTitle>Account Settings</PageTitle>
+      <PageSubtitle>
+        Manage your account profile and security settings
+      </PageSubtitle>
 
-      {/* Toast */}
       {toast && (
         <div className="mb-6 bg-green-100 text-green-700 px-4 py-3 rounded-xl shadow-sm">
           {toast}
@@ -132,7 +198,7 @@ export default function SettingsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-10 border-b border-gray-200 mb-10">
+      <div className="flex gap-10 border-b border-gray-200 mb-10 mt-8">
         <button
           onClick={() => setTab("profile")}
           className={`pb-3 cursor-pointer transition ${
@@ -158,13 +224,123 @@ export default function SettingsPage() {
 
       {/* PROFILE TAB */}
       {tab === "profile" && (
-  <div className="bg-white rounded-2xl border border-gray-200 p-12">
+        <>
+        <div className="bg-white rounded-2xl border border-gray-200 p-12">
 
-    {/* Header */}
-    <div className="flex items-center gap-8 mb-12">
+          <SectionTitle>
+          <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl w-fit hover:bg-gray-100 transition">
 
-      <div className="relative shrink-0">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#ffb48a] to-[#ff9a6c] flex items-center justify-center text-white text-3xl font-medium tracking-wide shadow-sm">
+  <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[#ff9a6c]/20 text-[#ff9a6c]">
+    <User size={18} strokeWidth={2} />
+  </div>
+
+  <div className="font-medium text-sm flex gap-1">
+    <span>{capitalize(user.firstName)}</span>
+    <span>{capitalize(user.lastName)}</span>
+  </div>
+
+</div>
+        </SectionTitle>
+
+          <div className="grid grid-cols-2 gap-10 mb-10 max-w-3xl mt-10">
+
+            <div>
+              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                First Name
+              </label>
+              <input
+                type="text"
+                className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                Last Name
+              </label>
+              <input
+                type="text"
+                className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+
+              />
+            </div>
+
+             {/* Email */}
+
+     <div className="col-span-2">
+
+     <FormLabel>
+        Email
+    </FormLabel>
+
+  <div className="relative mt-2">
+    <input
+      type="email"
+      value={user.email}
+      disabled
+      className="w-full border-b border-gray-200 py-2 text-sm text-gray-500 bg-transparent cursor-not-allowed pr-8"
+    />
+
+    <Lock
+      size={16}
+      className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
+    />
+  </div>
+
+  <HelperText>
+    Email can only be changed by administrator.{" "}
+    <a
+      href="/support"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[#ff9a6c] hover:underline"
+    >
+      Contact support
+    </a>
+  </HelperText>
+
+</div>
+
+          </div>
+
+          <button
+          type="button"
+            onClick={handleProfileSave}
+            className="px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md cursor-pointer"
+          >
+            Save Changes
+          </button>
+
+
+        </div>
+
+    
+
+     
+      {/* Public Profile Section */}
+
+<div className="bg-white rounded-2xl border border-gray-200 p-12 mt-12">
+
+  <SectionTitle>
+    Public Profile
+  </SectionTitle>
+
+  <PageSubtitle>
+    Information visible to brands and partners.
+  </PageSubtitle>
+
+  <div className="mt-10 space-y-10 max-w-3xl">
+
+    {/* Avatar */}
+    <div className="flex items-center gap-8">
+
+      <div className="relative">
+
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#ffb48a] to-[#ff9a6c] flex items-center justify-center text-white text-2xl font-medium">
           {firstName ? firstName.charAt(0).toUpperCase() : "U"}
         </div>
 
@@ -174,228 +350,202 @@ export default function SettingsPage() {
           className="absolute inset-0 opacity-0 cursor-pointer"
           onChange={(e) => {
             const file = e.target.files?.[0]
+
             if (file) {
               const reader = new FileReader()
+
               reader.onloadend = () => {
                 setAvatarPreview(reader.result as string)
               }
+
               reader.readAsDataURL(file)
             }
           }}
         />
-      </div>
 
-      <div className="flex-1 max-w-md">
-        <h2 className="text-xl font-semibold tracking-tight leading-snug">
-          {firstName} {lastName}
-        </h2>
-
-        <div className="mt-5">
-          <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-            Email
-          </label>
-
-          <input
-            type="email"
-            value={user.email}
-            disabled
-            className="w-full mt-2 bg-gray-50 text-gray-500 p-3 rounded-xl border border-gray-200 cursor-not-allowed text-sm"
-          />
-
-          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-  Email can only be changed by administrator.{" "}
-  <a
-  href="/support"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="text-[#ff9a6c] hover:underline cursor-pointer"
->
-  Contact support
-</a>
-</p>
-        </div>
-      </div>
-    </div>
-
-    {/* Name Fields */}
-    <div className="grid grid-cols-2 gap-10 mb-12 max-w-3xl">
-
-      <div>
-        <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-          First Name
-        </label>
-        <input
-          type="text"
-          className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] transition"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-        />
       </div>
 
       <div>
-        <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-          Last Name
-        </label>
-        <input
-          type="text"
-          className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] transition"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
+        <p className="text-sm font-medium">
+          Profile Photo
+        </p>
+
+        <p className="text-xs text-gray-400 mt-1">
+          Upload an image that will appear on your public profile.
+        </p>
       </div>
 
     </div>
 
-    {/* Soft Profile Block */}
-    <div className="bg-gray-50 rounded-2xl px-8 py-8 max-w-3xl space-y-8 mb-12">
+    {/* Handle */}
+    <div>
 
-      <div>
-        <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-          Handle
-        </label>
+      <FormLabel>
+        Handle
+      </FormLabel>
 
-        <input
-          type="text"
-          placeholder="@username"
-          className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] transition"
-          value={handle}
-          onChange={(e) => checkHandle(e.target.value)}
-        />
+      <input
+        type="text"
+        placeholder="@username"
+        className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
+        value={handle}
+        onChange={(e) => checkHandle(e.target.value)}
+      />
 
-        {handleAvailable === false && (
-          <p className="text-red-500 text-xs mt-2">
-            Handle already taken
-          </p>
-        )}
-        {handleAvailable === true && (
-          <p className="text-green-600 text-xs mt-2">
-            Handle available
-          </p>
-        )}
-      </div>
+      {handleAvailable === false && (
+        <p className="text-red-500 text-xs mt-2">
+          Handle already taken
+        </p>
+      )}
 
-      <div>
-        <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-          Bio
-        </label>
-
-        <textarea
-          rows={3}
-          className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] resize-none transition"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-        />
-      </div>
+      {handleAvailable === true && (
+        <p className="text-green-600 text-xs mt-2">
+          Handle available
+        </p>
+      )}
 
     </div>
 
-    <button
-      onClick={handleProfileSave}
-      className="px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md transition cursor-pointer"
-    >
-      Save Changes
-    </button>
+    {/* Public Profile URL */}
+    <div>
+
+      <FormLabel>
+        Public Profile URL
+      </FormLabel>
+
+      <div className="mt-2 text-sm text-gray-600">
+        myplatform.com/
+        <span className="font-medium text-black">
+          {handle || "username"}
+        </span>
+      </div>
+
+      <HelperText>
+        This is the public page brands will see.
+      </HelperText>
+
+    </div>
+
+
+    {/* Bio */}
+    <div>
+
+      <FormLabel>
+        Bio
+      </FormLabel>
+
+      <textarea
+        rows={3}
+        className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] resize-none"
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+      />
+
+    </div>
 
   </div>
-)}
+
+  <div className="pt-4">
+
+  <button
+  type="button"
+    onClick={handleProfileSave}
+    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md transition cursor-pointer"
+  >
+    Save Public Profile
+  </button>
+
+</div>
+
+</div>
+
+    </>
+      )}
+
+
 
       {/* SECURITY TAB */}
       {tab === "security" && (
-  <div className="bg-white rounded-2xl border border-gray-200 p-12">
-    <div className="max-w-3xl space-y-12">
+        <div className="space-y-10">
 
-      {/* Account Info Section */}
-      <div className="space-y-8">
+          {/* Password Section */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-10">
 
-        <div>
-          <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-            Account Status
-          </label>
+            <SectionTitle>
+              Change Password
+            </SectionTitle>
 
-          <div className="mt-3">
-            {user.status === "ACTIVE" ? (
-              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-green-50 text-green-600 border border-green-200">
-                ● Active
-              </span>
-            ) : user.status === "PENDING" ? (
-              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-yellow-50 text-yellow-600 border border-yellow-200">
-                ● Pending
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-red-50 text-red-600 border border-red-200">
-                ● Suspended
-              </span>
-            )}
+            <div className="space-y-6 mt-6">
+
+              <input
+                type="password"
+                placeholder="Current Password"
+                className="w-full border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+
+              <input
+                type="password"
+                placeholder="New Password"
+                className="w-full border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+
+            </div>
+
+            <button
+            type="button"
+              onClick={handlePasswordChange}
+              className="mt-6 px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md cursor-pointer"
+            >
+              Update Password
+            </button>
+
           </div>
-        </div>
 
-        <div>
-          <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-            Role
-          </label>
+          {/* Delete Account Section */}
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10">
 
-          <p className="mt-2 text-sm font-medium text-gray-700 capitalize">
-            {user.role}
-          </p>
-        </div>
+            <SectionTitle>
+              Delete Account
+            </SectionTitle>
 
-      </div>
+            <p className="text-sm text-gray-500 mt-2 mb-6 max-w-lg">
+              Deleting your account is permanent. All data associated with this
+              account will be permanently removed and cannot be recovered.
+            </p>
 
-      {/* Divider */}
-      <div className="border-t border-gray-100" />
-
-      {/* Change Password */}
-      <div className="space-y-8">
-
-        <div>
-          <h3 className="text-lg font-semibold tracking-tight">
-            Change Password
-          </h3>
-          <p className="text-sm text-gray-400 mt-1">
-            Make sure your new password is strong and secure.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-
-          <div>
-            <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-              Current Password
-            </label>
             <input
               type="password"
-              className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] transition"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter your password to confirm"
+              className="w-full max-w-md border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-red-400 bg-transparent mb-6"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
             />
-          </div>
 
-          <div>
-            <label className="text-xs uppercase tracking-wider text-gray-400 font-medium">
-              New Password
-            </label>
-            <input
-              type="password"
-              className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c] transition"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="px-6 py-3 rounded-xl border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Account"
+              )}
+            </button>
+
           </div>
 
         </div>
-
-        <button
-          onClick={handlePasswordChange}
-          className="px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md transition cursor-pointer"
-        >
-          Update Password
-        </button>
-
-      </div>
+      )}
 
     </div>
-  </div>
-)}
-</div>
   )
 }

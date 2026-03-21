@@ -39,11 +39,13 @@ export async function POST(req: Request) {
       );
     }
 
-    if (user.status !== "ACTIVE") {
-  return NextResponse.json(
-    { error: "Invalid credentials" },
-    { status: 401 }
-  );
+    if (user.status === "SUSPENDED") {
+  return NextResponse.json({
+    message: "Account suspended",
+    user: {
+      status: "SUSPENDED",
+    },
+  });
 }
 
    const token = jwt.sign(
@@ -57,8 +59,13 @@ export async function POST(req: Request) {
 );
 
     const response = NextResponse.json({
-      message: "Login successful",
-    });
+  message: "Login successful",
+  user: {
+    id: user.id,
+    email: user.email,
+    status: user.status,
+  },
+});
 
     response.cookies.set("token", token, {
   httpOnly: true,

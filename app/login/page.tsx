@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import LoginVisual from "@/components/ui/LoginVisual"
+import Link from "next/link";
 
 export default function Login() {
   const router = useRouter();
@@ -27,13 +29,21 @@ export default function Login() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setMessage(data.error || "Invalid credentials");
-        setLoading(false);
-        return;
-      }
+if (!res.ok) {
+  setMessage(data.error || "Invalid credentials");
+  setLoading(false);
+  return;
+}
 
-      router.push("/dashboard");
+// 👇 هذا السطر الجديد (المهم جداً)
+if (data.user?.status === "SUSPENDED") {
+  router.replace("/account-suspended")
+  return
+}
+
+// 👇 هذا يبقى كما هو
+router.push("/dashboard");
+
     } catch {
       setMessage("Server error");
     }
@@ -61,14 +71,7 @@ export default function Login() {
             Track performance, manage offers and scale your revenue effortlessly.
           </p>
 
-          <motion.img
-            src="https://images.unsplash.com/photo-1551288049-bebda4e38f71"
-            alt="Dashboard preview"
-            className="rounded-3xl shadow-2xl"
-            initial={{ y: 0 }}
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
+          <LoginVisual />
         </div>
       </div>
 
@@ -79,10 +82,17 @@ export default function Login() {
           {/* Logo */}
           <div className="text-center mb-10">
             <div className="text-3xl font-semibold tracking-tight">
-              <span className="text-gray-800">My</span>
-              <span className="bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] bg-clip-text text-transparent">
-                Platform
-              </span>
+               {/* ================= LOGO ================= */}
+
+<div className="flex justify-center">
+  <Link href="/" className="flex items-center justify-center">
+    <img
+      src="/logo.svg"
+      alt="VoxLinker"
+      className="h-10 w-auto"
+    />
+  </Link>
+</div>
             </div>
           </div>
 
