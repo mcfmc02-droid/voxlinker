@@ -1,5 +1,5 @@
 {
-  "name": "my-platform",
+  "name": "voxlinker",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "worker": "ts-node workers/clickWorker.ts"
+    "worker": "ts-node workers/clickWorker.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
