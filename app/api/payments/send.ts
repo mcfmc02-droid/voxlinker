@@ -65,21 +65,19 @@ export async function POST(req: Request) {
 
     // 🔥 FIX ALL ERRORS HERE
     await prisma.withdrawal.create({
-      data: {
-        userId: user.id,
-        walletId: wallet.id,      // ✅ مهم
-        amount,
-        netAmount: amount,        // ✅ مهم (ممكن لاحقاً تخصم tax)
-        taxAmount: 0,             // optional لكن أفضل نضيفه
-        status: WithdrawalStatus.PAID, // ✅ لأن عندك enum فيه PAID وليس COMPLETED
-        processedAt: new Date(),  // optional لكن احترافي
-      },
-    })
+  data: {
+    userId: user.id,
+    walletId: wallet.id,
+    amount,
+    netAmount: amount,
+    status: "PENDING",
+  },
+})
 
-    return NextResponse.json({
-      success: true,
-      payout,
-    })
+return NextResponse.json({
+  success: true,
+  message: "Withdrawal request submitted",
+})
 
   } catch (err) {
     console.error("PAYOUT ERROR:", err)

@@ -70,21 +70,21 @@ export default function BrandMarquee() {
     "/brands/wayfair.svg",
     "/brands/samsung.svg",
     "/brands/canva.svg",
-    "/brands/macys.svg",
-    "/brands/honest.svg",
-    "/brands/outdoorvoices.svg",
+    "/brands/nordvpn.svg",
+    "/brands/shein.svg",
+    "/brands/kinsta.svg",
     "/brands/asos.svg"
   ]
 
   const row3 = [
     "/brands/elementor.svg",
-    "/brands/reebok.svg",
-    "/brands/puma.svg",
+    "/brands/envato.svg",
+    "/brands/aliexpress.svg",
     "/brands/target.svg",
     "/brands/walmart.svg",
-    "/brands/nordstrom.svg",
-    "/brands/uniqlo.svg",
-    "/brands/gap.svg"
+    "/brands/lenovo.svg",
+    "/brands/semrush.svg",
+    "/brands/sharp.svg"
   ]
 
   return (
@@ -98,7 +98,7 @@ export default function BrandMarquee() {
           Trusted brand ecosystem
         </p>
 
-        <h2 className="text-3xl md:text-4xl font-semibold mb-4 leading-tight">
+        <h2 className="text-3xl md:text-4xl font-semibold mb-4">
           Promote products from thousands of global brands
         </h2>
 

@@ -1,54 +1,87 @@
+export const runtime = "nodejs"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
 
+/* ================= PATCH USER ================= */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get("token")?.value
+    /* ========= AUTH ========= */
+    const cookieHeader = req.headers.get("cookie")
+
+    if (!cookieHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const token = cookieHeader
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1]
 
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: number
-      role: string
-    }
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { userId: number; role: string }
 
     if (decoded.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    /* ========= INPUT ========= */
     const body = await req.json()
 
     if (!body.status) {
-      return NextResponse.json({ error: "Status required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Status required" },
+        { status: 400 }
+      )
     }
 
+    /* ========= VALIDATE STATUS ========= */
+    const allowedStatuses = ["ACTIVE", "PENDING", "SUSPENDED", "REJECTED"]
+
+    if (!allowedStatuses.includes(body.status)) {
+      return NextResponse.json(
+        { error: "Invalid status" },
+        { status: 400 }
+      )
+    }
+
+    /* ========= UPDATE USER ========= */
     const updatedUser = await prisma.user.update({
       where: { id: Number(params.id) },
       data: { status: body.status },
     })
 
-    // تسجيل العملية في AdminLog
+    /* ========= ADMIN LOG ========= */
     await prisma.adminLog.create({
       data: {
         adminId: decoded.userId,
         action: "UPDATE_STATUS",
         targetUserId: updatedUser.id,
-        details: Changed status to ${body.status},
+        details: `Changed status to ${body.status}`,
       },
     })
 
-    return NextResponse.json({ user: updatedUser })
+    return NextResponse.json({
+      success: true,
+      user: updatedUser,
+    })
 
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    console.error("ADMIN USER UPDATE ERROR:", error)
+
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    )
   }
 }

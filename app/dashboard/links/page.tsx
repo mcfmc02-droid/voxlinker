@@ -135,7 +135,24 @@ export default function LinksPage() {
     <button
       onClick={handleConvert}
       disabled={loading || !url}
-      className="px-6 py-3 bg-gradient-to-r from-[#ff9a6c] to-[#ffb38a] text-white rounded-xl disabled:opacity-50 transition hover:scale-105 cursor-pointer"
+      className="
+px-6 py-3
+rounded-xl
+text-white
+
+bg-black
+border border-black
+
+disabled:opacity-50
+
+transition
+hover:scale-105
+hover:bg-white
+hover:text-black
+hover:border-black
+
+cursor-pointer
+"
     >
       {loading ? "Converting..." : "Convert Link"}
     </button>

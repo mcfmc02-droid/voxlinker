@@ -12,6 +12,7 @@ import CTA from "@/components/landing/CTA"
 import Footer from "@/components/landing/Footer"
 import MobileShowcase from "@/components/landing/MobileShowcase"
 import Testimonials from "@/components/landing/Testimonials"
+import CaseStudies from "@/components/landing/CaseStudies"
 
 export default function Home() {
 
@@ -28,11 +29,10 @@ return (
 {/* BRAND MARQUEE */}
 <BrandMarquee />
 
+
 {/* MOBILE SHOWCASE */}
 <MobileShowcase/>
 
-{/* CREATOR GROWTH */}
-<CreatorGrowth />
 
 {/* DASHBOARD PREVIEW */}
 <DashboardPreview />
@@ -41,6 +41,9 @@ return (
 
 {/* EARNINGS CALCULATOR */}
 <EarningsCalculator />
+
+{/* CASE STUDIES */}
+<CaseStudies />
 
 {/* HOW IT WORKS */}
 <HowItWorks />

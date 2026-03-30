@@ -1,35 +1,54 @@
 "use client"
 
-import { ReactNode } from "react"
+import { ReactNode, useState } from "react"
 import Sidebar from "./components/Sidebar"
 import Topbar from "./components/Topbar"
+
 
 export default function DashboardLayout({
   children,
 }: {
   children: ReactNode
 }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-gray-100">
 
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen border-r border-gray-200 bg-white">
-        <Sidebar />
+      {/* ===== Topbar FULL ===== */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <Topbar
+  onMenuClick={() => setMenuOpen(prev => !prev)}
+  menuOpen={menuOpen}
+/>
       </div>
 
-      {/* Main area */}
-      <div className="ml-64 flex flex-col min-h-screen">
+      {/* ===== SIDEBAR DESKTOP ===== */}
+      <div className="hidden md:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200">
+  <Sidebar />
+</div>
 
-        {/* Topbar */}
-        <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
-          <Topbar />
-        </div>
+      {/* ===== SIDEBAR MOBILE ===== */}
+      {menuOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          />
 
-        {/* Page Content */}
-        <main className="flex-1 p-8">
+          {/* Drawer */}
+          <div className="fixed top-0 left-0 h-full w-72 bg-white z-50 md:hidden shadow-xl overflow-y-auto">
+            <Sidebar />
+          </div>
+        </>
+      )}
+
+      {/* ===== CONTENT ===== */}
+      <div className="md:ml-64">
+        <main className="p-6 md:p-8">
           {children}
         </main>
-
       </div>
 
     </div>

@@ -3,7 +3,6 @@
 import { useEffect,useState } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { useMotionValue, useSpring } from "framer-motion"
 import CinematicStream from "@/components/ui/CinematicStream"
 import Link from "next/link"
 
@@ -28,31 +27,6 @@ const [stats,setStats] = useState({
   growth: 18
 })
 
-/* ================= TILT ================= */
-
-const rotateX = useMotionValue(8)
-const rotateY = useMotionValue(-6)
-
-const springX = useSpring(rotateX,{ stiffness:120, damping:18 })
-const springY = useSpring(rotateY,{ stiffness:120, damping:18 })
-
-const handleMouseMove = (e:any)=>{
-  const rect = e.currentTarget.getBoundingClientRect()
-
-  const x = e.clientX - rect.left
-  const y = e.clientY - rect.top
-
-  const centerX = rect.width / 2
-  const centerY = rect.height / 2
-
-  rotateY.set((x - centerX) / 25)
-  rotateX.set(-(y - centerY) / 25)
-}
-
-const handleMouseLeave = ()=>{
-  rotateX.set(8)
-  rotateY.set(-6)
-}
 
 /* ================= CHART + STATS ================= */
 
@@ -120,17 +94,16 @@ return(
 {/* ipad */}
 
 <motion.div
-onMouseMove={handleMouseMove}
-onMouseLeave={handleMouseLeave}
+
 style={{
-rotateX:springX,
-rotateY:springY,
-transformPerspective:1200
+  rotateX: 6,
+  rotateY: 0,
+  transformPerspective: 1400
 }}
 className="
 relative
-w-[640px]
-h-[460px]
+w-[560px]
+h-[400px]
 rounded-[40px]
 bg-transparent
 p-[6px]
@@ -176,7 +149,7 @@ transition={{duration:6,repeat:Infinity,ease:"linear"}}
 
 {/* Logo */}
 
-<div className="flex justify-center">
+<div className="flex justify-center translate-y-[15px]">
 
 <h3 className="text-[20px] font-semibold tracking-tight">
 
@@ -286,12 +259,20 @@ ${h * 12}
 {/* BAR */}
 
 <motion.div
-initial={{height:0}}
-animate={{height:h}}
+initial={{
+  height: 0,
+  scaleY: 0.6,
+  opacity: 0
+}}
+animate={{
+  height: h,
+  scaleY: 1,
+  opacity: 1
+}}
 transition={{
-duration:0.6,
-delay:i*0.03,
-ease:[0.22,1,0.36,1]
+  duration: 0.45,
+  ease: [0.22, 1, 0.36, 1],
+  delay: i * 0.01   // 🔥 خفيف جداً (غير مزعج)
 }}
 className="
 w-full

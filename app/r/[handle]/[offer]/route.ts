@@ -5,46 +5,51 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { handle: string; offer: string } }
 ) {
+  try {
+    const { handle, offer } = params
 
-  const { handle, offer } = params
+    const creator = await prisma.user.findUnique({
+      where: { handle }
+    })
 
-  const creator = await prisma.user.findUnique({
-    where: { handle }
-  })
-
-  if (!creator) {
-    return NextResponse.redirect("https://google.com")
-  }
-
-  const offerData = await prisma.offer.findFirst({
-    where: {
-      OR: [
-        { name: offer },
-        { id: Number(offer) }
-      ]
+    if (!creator) {
+      return NextResponse.redirect(process.env.NEXT_PUBLIC_FALLBACK_URL || "/")
     }
-  })
 
-  if (!offerData) {
-    return NextResponse.redirect("https://google.com")
-  }
+    // 🔥 الأفضل: تعتمد slug مستقبلاً
+    const offerData = await prisma.offer.findFirst({
+      where: {
+        OR: [
+          { id: Number(offer) || 0 },
+          { name: { equals: offer, mode: "insensitive" } }
+        ]
+      }
+    })
 
-  const affiliateLink = await prisma.affiliateLink.findFirst({
-    where: {
-      userId: creator.id,
-      offerId: offerData.id
+    if (!offerData) {
+      return NextResponse.redirect(process.env.NEXT_PUBLIC_FALLBACK_URL || "/")
     }
-  })
 
-  if (!affiliateLink) {
-    return NextResponse.redirect("https://google.com")
+    const affiliateLink = await prisma.affiliateLink.findFirst({
+      where: {
+        userId: creator.id,
+        offerId: offerData.id
+      }
+    })
+
+    if (!affiliateLink) {
+      return NextResponse.redirect(process.env.NEXT_PUBLIC_FALLBACK_URL || "/")
+    }
+
+    const url = new URL(req.url)
+
+    const redirectUrl =
+      `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${affiliateLink.code}?${url.searchParams.toString()}`
+
+    return NextResponse.redirect(redirectUrl)
+
+  } catch (error) {
+    console.error(error)
+    return NextResponse.redirect(process.env.NEXT_PUBLIC_FALLBACK_URL || "/")
   }
-
-  const url = new URL(req.url)
-
-  const redirectUrl =
-    `${process.env.NEXT_PUBLIC_APP_URL}/track/${affiliateLink.code}?${url.searchParams.toString()}`
-
-  return NextResponse.redirect(redirectUrl)
-
 }

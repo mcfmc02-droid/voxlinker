@@ -2,25 +2,32 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { trackConversion } from "@/lib/analytics"
 
-
 export async function GET(req: Request) {
-
   try {
-
     const url = new URL(req.url)
 
     const clickId = url.searchParams.get("click_id")
     const orderId = url.searchParams.get("order_id")
-    const amount = Number(url.searchParams.get("amount") || 0)
+    const amountParam = url.searchParams.get("amount")
+    const token = url.searchParams.get("token")
+    const statusParam = url.searchParams.get("status")
 
+    // ===== VALIDATION =====
     if (!clickId) {
-      return NextResponse.json({ error: "click_id required" })
+      return NextResponse.json({ error: "click_id required" }, { status: 400 })
     }
 
     if (!orderId) {
-      return NextResponse.json({ error: "order_id required" })
+      return NextResponse.json({ error: "order_id required" }, { status: 400 })
     }
 
+    const amount = amountParam ? parseFloat(amountParam) : 0
+
+    if (!amount || amount <= 0) {
+      return NextResponse.json({ error: "invalid amount" }, { status: 400 })
+    }
+
+    // ===== GET CLICK =====
     const click = await prisma.click.findUnique({
       where: { clickId },
       include: {
@@ -30,60 +37,79 @@ export async function GET(req: Request) {
     })
 
     if (!click) {
-      return NextResponse.json({ error: "click not found" })
+      return NextResponse.json({ error: "click not found" }, { status: 404 })
     }
 
-    // منع duplicate orders
-    const existing = await prisma.conversion.findUnique({
+    // ===== SECURITY =====
+    if (click.offer.postbackSecret) {
+      if (!token || token !== click.offer.postbackSecret) {
+        return NextResponse.json({ error: "invalid token" }, { status: 403 })
+      }
+    }
+
+    // ===== DUPLICATE CHECK =====
+    const existingOrder = await prisma.conversion.findUnique({
       where: { orderId }
     })
 
-    if (existing) {
-      return NextResponse.json({
-        status: "duplicate"
-      })
+    if (existingOrder) {
+      return NextResponse.json({ status: "duplicate" })
     }
 
-    const existingClickConversion = await prisma.conversion.findFirst({
-    where: { clickId }
-     })
+    const existingClick = await prisma.conversion.findFirst({
+      where: { clickId }
+    })
 
-    if (existingClickConversion) {
-   return NextResponse.json({ status: "already converted" })
-  }
-   
-    const token = url.searchParams.get("token")
+    if (existingClick) {
+      return NextResponse.json({ status: "already converted" })
+    }
 
-    if (token !== click.offer.postbackSecret) {
-    return NextResponse.json({ error: "invalid token" })
-   }
+    // ===== STATUS MAPPING =====
+    let status: "APPROVED" | "PENDING" | "REJECTED" = "PENDING"
 
-   if (!orderId) {
-    return NextResponse.json({ error: "order_id required" })
-   }
+    if (statusParam) {
+      const normalized = statusParam.toLowerCase()
 
-   if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "invalid amount" })
-  }
+      if (normalized === "approved" || normalized === "sale") {
+        status = "APPROVED"
+      }
 
-  await prisma.postbackLog.create({
-  data: {
-    clickId,
-    orderId,
-    ip: req.headers.get("x-forwarded-for") ?? null,
-    status: "SUCCESS"
-  }
-})
+      if (normalized === "rejected" || normalized === "declined") {
+        status = "REJECTED"
+      }
+    }
 
-    // حساب العمولة
+    // ===== LOG POSTBACK =====
+    await prisma.postbackLog.create({
+      data: {
+        clickId,
+        orderId,
+        ip:
+          req.headers.get("x-forwarded-for")?.split(",")[0] ||
+          req.headers.get("x-real-ip") ||
+          null,
+        status: "SUCCESS"
+      }
+    })
+
+    // ===== COMMISSION =====
     let commission = 0
 
-    if (click.offer.commissionType === "PERCENTAGE") {
-      commission = amount * (click.offer.commissionValue / 100)
-    } else {
+    if (click.offer.offerType === "CPA") {
       commission = click.offer.commissionValue
     }
 
+    if (click.offer.offerType === "REVSHARE") {
+      commission = (amount * click.offer.commissionValue) / 100
+    }
+
+    if (click.offer.offerType === "HYBRID") {
+      commission =
+        click.offer.commissionValue +
+        (amount * 0.05) // قابل للتطوير
+    }
+
+    // ===== CREATE CONVERSION =====
     const conversion = await prisma.conversion.create({
       data: {
         clickId,
@@ -95,16 +121,18 @@ export async function GET(req: Request) {
         orderId,
         revenue: amount,
         commission,
-        status: "APPROVED"
+        status
       }
     })
 
+    // ===== ANALYTICS =====
     await trackConversion(click.offerId, amount, commission)
 
-    // تحديث Wallet
-    await prisma.wallet.upsert({
-      where: { userId: click.userId },
-      update: {
+    // ===== WALLET (only approved) =====
+    if (status === "APPROVED") {
+      await prisma.wallet.upsert({
+        where: { userId: click.userId },
+        update: {
         availableBalance: { increment: commission },
         totalEarned: { increment: commission }
       },
@@ -114,20 +142,21 @@ export async function GET(req: Request) {
         totalEarned: commission
       }
     })
+    }
 
     return NextResponse.json({
       success: true,
       conversionId: conversion.id,
+      status,
       commission
     })
 
   } catch (error) {
+    console.error("Postback error:", error)
 
-    console.error(error)
-
-    return NextResponse.json({
-      error: "postback failed"
-    })
-
+    return NextResponse.json(
+      { error: "postback failed" },
+      { status: 500 }
+    )
   }
 }

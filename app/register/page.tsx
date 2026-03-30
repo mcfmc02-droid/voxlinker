@@ -261,14 +261,7 @@ setSuggestion(fix);
             Advanced CPA, RevShare & Hybrid engine built for serious publishers.
           </p>
 
-          <motion.img
-  src="/images/phone-mockup.png"
-  alt="Platform mobile preview"
-  className="rounded-3xl drop-shadow-2xl"
-  initial={{ y: 0 }}
-  animate={{ y: [0, -12, 0] }}
-  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-/>
+          
         </div>
       </div>
 

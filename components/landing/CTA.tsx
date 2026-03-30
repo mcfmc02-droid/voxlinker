@@ -7,7 +7,7 @@ export default function CTA(){
 
 return(
 
-<section className="py-36 bg-[#fafafa] px-6 lg:px-16">
+<section className="py-32 bg-white px-6 lg:px-16">
 
 <div className="max-w-6xl mx-auto">
 
@@ -16,31 +16,72 @@ initial={{opacity:0, y:40}}
 whileInView={{opacity:1, y:0}}
 transition={{duration:0.6}}
 viewport={{once:true}}
-className="relative overflow-hidden rounded-3xl bg-white border border-gray-200 shadow-xl px-12 py-20 text-center"
+className="
+relative overflow-hidden
+rounded-3xl
+
+bg-gradient-to-br from-white to-[#fff6f1]
+
+border border-gray-100
+shadow-[0_20px_60px_rgba(0,0,0,0.08)]
+
+px-10 md:px-14 py-16 md:py-20
+text-center
+"
 >
 
-{/* SOFT BACKGROUND GLOW */}
+{/* ===== CLEAN GLOW ===== */}
+<div className="
+absolute inset-0 pointer-events-none rounded-3xl
+" style={{
+boxShadow: "0 0 40px rgba(255,154,108,0.12)"
+}}/>
 
-<div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-r from-[#ffb48a]/20 to-[#ff9a6c]/20 rounded-full blur-3xl opacity-60"/>
+{/* ===== SUBTLE TOP LIGHT ===== */}
+<div className="
+absolute top-0 left-0 w-full h-[1px]
+bg-gradient-to-r from-transparent via-[#ff9a6c]/30 to-transparent
+"/>
 
-
-{/* CONTENT */}
-
+{/* ===== CONTENT ===== */}
 <div className="relative z-10">
 
-<h2 className="text-4xl md:text-5xl font-semibold mb-6 leading-tight">
+<h2 className="
+text-[26px] sm:text-[32px] md:text-[42px] lg:text-[50px]
 
-Start Growing with
+leading-[1.3]
+mb-5 md:mb-6
+font-medium
+text-[#0f172a]
+">
 
-<span className="bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] bg-clip-text text-transparent ml-2">
-VoxLinker
+Start Growing with{" "}
+
+<span>
+  Vox
+</span>
+
+<span className="
+bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
+bg-clip-text text-transparent
+">
+  Link
+</span>
+
+<span>
+  er
 </span>
 
 </h2>
 
-<p className="text-gray-500 text-lg max-w-2xl mx-auto mb-10">
+<p className="
+text-gray-500
+text-[15px] md:text-[17px]
+leading-[1.8]
+max-w-xl mx-auto mb-8
+">
 
-Join creators and publishers who monetize their audience
+Join creators and publishers building sustainable income
 with smarter affiliate infrastructure and real-time insights.
 
 </p>
@@ -55,6 +96,7 @@ Apply Now
 
 </Link>
 
+
 </div>
 
 </motion.div>
@@ -64,5 +106,4 @@ Apply Now
 </section>
 
 )
-
 }

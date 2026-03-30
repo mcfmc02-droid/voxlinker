@@ -6,34 +6,36 @@ import SearchToolbar from "@/components/ui/dashboard/SearchToolbar"
 import { useRouter } from "next/navigation"
 
 export default function ActiveRetailersPage() {
-  const [brands, setBrands] = useState<any[]>([])
-  const [filteredBrands, setFilteredBrands] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
 
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [generating, setGenerating] = useState<number | null>(null)
-  const [copied,setCopied] = useState(false)
+const [brands, setBrands] = useState<any[]>([])
+const [filteredBrands, setFilteredBrands] = useState<any[]>([])
+const [loading, setLoading] = useState(true)
 
-  const [search, setSearch] = useState("")
-  const [sort, setSort] = useState("commission")
-  const [selectedBrand,setSelectedBrand] = useState<any>(null)
-  const [detailsOpen,setDetailsOpen] = useState(false)
-  const [favorites,setFavorites] = useState<number[]>([])
-  const router = useRouter()
+const [generatedLink, setGeneratedLink] = useState<string | null>(null)
+const [modalOpen, setModalOpen] = useState(false)
+const [generating, setGenerating] = useState<number | null>(null)
+const [copied,setCopied] = useState(false)
 
+const [search, setSearch] = useState("")
+const [sort, setSort] = useState("commission")
 
-  const openBrandDetails = (brand:any) => {
+// ✅ NEW (بدون كسر أي شيء)
+const [categories,setCategories] = useState<string[]>([])
+const [selectedCategory,setSelectedCategory] = useState("all")
+const [commissionType,setCommissionType] = useState("all")
 
-   setSelectedBrand(brand)
-   setDetailsOpen(true)
+const [selectedBrand,setSelectedBrand] = useState<any>(null)
+const [detailsOpen,setDetailsOpen] = useState(false)
+const [favorites,setFavorites] = useState<number[]>([])
 
+const router = useRouter()
+
+const openBrandDetails = (brand:any) => {
+  setSelectedBrand(brand)
+  setDetailsOpen(true)
 }
 
-
 async function toggleFavorite(brandId:number){
-
-  // Optimistic update
   setFavorites(prev => 
     prev.includes(brandId)
       ? prev.filter(id => id !== brandId)
@@ -41,162 +43,194 @@ async function toggleFavorite(brandId:number){
   )
 
   try{
-
     const res = await fetch("/api/favorites",{
       method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
+      headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({brandId})
     })
 
-    if(!res.ok){
-      throw new Error("API error")
-    }
+    if(!res.ok) throw new Error()
 
   }catch{
-
-    // rollback if API fails
     setFavorites(prev => 
       prev.includes(brandId)
         ? prev.filter(id => id !== brandId)
         : [...prev, brandId]
     )
-
   }
-
 }
 
-  useEffect(() => {
-    fetch("/api/brands")
-      .then(res => res.json())
-      .then(data => {
-        setBrands(data)
-        setFilteredBrands(data)
-        setLoading(false)
+// ================= FETCH =================
+
+useEffect(() => {
+  fetch("/api/brands")
+    .then(res => res.json())
+    .then(data => {
+      setBrands(data)
+      setFilteredBrands(data)
+
+      // ✅ استخراج categories ديناميك
+      const set = new Set<string>()
+      data.forEach((b:any)=>{
+        b.categories?.forEach((c:any)=>{
+          if(c.name) set.add(c.name)
+        })
       })
-  }, [])
+      setCategories(Array.from(set))
 
-  useEffect(()=>{
+      setLoading(false)
+    })
+}, [])
 
+// ================= FAVORITES =================
+
+useEffect(()=>{
 async function loadFavorites(){
-
 const res = await fetch("/api/favorites")
-
 if(!res.ok) return
-
 const data = await res.json()
-
 setFavorites(data)
-
 }
-
 loadFavorites()
-
 },[])
 
-  useEffect(() => {
-    let results = brands.filter((brand) =>
-      brand.name.toLowerCase().includes(search.toLowerCase())
-    )
+// ================= FILTER =================
 
-    if (sort === "commission") {
-      results = results.sort((a, b) => {
-        const aComm =
-          a.categories?.length > 0
-            ? Math.max(...a.categories.map((c: any) => c.commissionRate))
-            : a.defaultCommission || 0
+useEffect(() => {
 
-        const bComm =
-          b.categories?.length > 0
-            ? Math.max(...b.categories.map((c: any) => c.commissionRate))
-            : b.defaultCommission || 0
+let results = brands.filter((brand) => {
 
-        return bComm - aComm
-      })
+  const matchesSearch =
+    brand.name.toLowerCase().includes(search.toLowerCase())
+
+  const matchesCategory =
+    selectedCategory === "all" ||
+    brand.categories?.some((c:any)=>c.name === selectedCategory)
+
+  const matchesCommission =
+    commissionType === "all" ||
+    brand.commissionType === commissionType
+
+  return matchesSearch && matchesCategory && matchesCommission
+})
+
+if (sort === "commission") {
+  results = results.sort((a, b) => {
+    const aComm =
+      a.categories?.length > 0
+        ? Math.max(...a.categories.map((c: any) => c.commissionRate))
+        : a.defaultCommission || 0
+
+    const bComm =
+      b.categories?.length > 0
+        ? Math.max(...b.categories.map((c: any) => c.commissionRate))
+        : b.defaultCommission || 0
+
+    return bComm - aComm
+  })
+}
+
+if (sort === "az") {
+  results = results.sort((a, b) =>
+    a.name.localeCompare(b.name)
+  )
+}
+
+setFilteredBrands([...results])
+
+}, [search, sort, brands, selectedCategory, commissionType])
+
+// ================= GENERATE =================
+
+const handleGenerateLink = async (brandId: number) => {
+  try {
+    setGenerating(brandId)
+
+    const res = await fetch("/api/affiliate-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId })
+    })
+
+    const data = await res.json()
+
+    if (data.code) {
+      const fullLink = `${window.location.origin}/track/${data.code}`
+      setGeneratedLink(fullLink)
+      setModalOpen(true)
     }
-
-    if (sort === "az") {
-      results = results.sort((a, b) =>
-        a.name.localeCompare(b.name)
-      )
-    }
-
-    setFilteredBrands([...results])
-  }, [search, sort, brands])
-
-  const handleGenerateLink = async (brandId: number) => {
-    try {
-      setGenerating(brandId)
-
-      const res = await fetch("/api/affiliate-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandId })
-      })
-
-      const data = await res.json()
-
-      if (data.code) {
-        const fullLink = `${window.location.origin}/track/${data.code}`
-        setGeneratedLink(fullLink)
-        setModalOpen(true)
-      }
-    } catch (error) {
-      console.error("Error generating link:", error)
-    } finally {
-      setGenerating(null)
-    }
+  } finally {
+    setGenerating(null)
   }
+}
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-3 gap-8">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-64 bg-gray-100 rounded-3xl animate-pulse" />
-        ))}
-      </div>
-    )
-  }
+// ================= UI =================
 
+if (loading) {
   return (
-    <div className="space-y-10">
+    <div className="grid grid-cols-3 gap-8">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="h-64 bg-gray-100 rounded-3xl animate-pulse" />
+      ))}
+    </div>
+  )
+}
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-medium tracking-tight">
-            Active Retailers
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Discover and monetize premium brands.
-          </p>
-        </div>
+return (
 
-      </div>
+<div className="space-y-10">
 
-      {/* Search */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4 flex-wrap">
+{/* Header */}
+<div>
+  <h1 className="text-2xl font-medium">Active Retailers</h1>
+  <p className="text-gray-600 mt-2">
+    Discover and monetize premium brands.
+  </p>
+</div>
 
+{/* ===== SEARCH (معدل بدون كسر شيء) ===== */}
+
+<div className="
+bg-white border border-gray-200
+rounded-2xl
+p-4 sm:p-5
+
+flex flex-col md:flex-row
+gap-3 md:gap-4
+md:items-center
+">
+
+{/* SEARCH */}
+<div className="w-full md:w-[420px] lg:w-[820px]">
   <SearchToolbar placeholder="Search retailers..." />
+</div>
 
-  <div className="flex gap-3 flex-wrap">
+{/* FILTERS */}
+<div className="flex gap-3 flex-wrap md:flex-nowrap md:flex-1">
 
-    <select className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none cursor-pointer">
-      <option>All Categories</option>
-      <option>Fashion</option>
-      <option>Electronics</option>
-      <option>Home</option>
-    </select>
+<select
+value={selectedCategory}
+onChange={(e)=>setSelectedCategory(e.target.value)}
+className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm cursor-pointer"
+> 
+<option value="all">All Categories</option>
+{categories.map(cat=>(
+  <option key={cat} value={cat}>{cat}</option>
+))}
+</select>
 
-    <select className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none cursor-pointer">
-      <option>All Commission Types</option>
-      <option>CPA</option>
-      <option>CPS</option>
-      <option>Hybrid</option>
-    </select>
+<select
+value={commissionType}
+onChange={(e)=>setCommissionType(e.target.value)}
+className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm cursor-pointer"
+> 
+<option value="all">All Commission Types</option>
+<option value="cpa">CPA</option>
+<option value="cps">CPS</option>
+<option value="hybrid">Hybrid</option>
+</select>
 
-  </div>
+</div>
 
 </div>
 
@@ -215,64 +249,119 @@ return (
 
 <div key={brand.id} className="flex flex-col gap-3">
 
+{/* ===== CARD ===== */}
 <motion.div
 initial={{opacity:0,y:10}}
 animate={{opacity:1,y:0}}
 transition={{delay:index*0.03}}
-className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl transition aspect-square flex flex-col justify-between"
+className="
+group relative
+bg-white border border-gray-200
+rounded-xl p-6
+
+hover:shadow-xl hover:-translate-y-[3px]
+transition-all duration-300
+
+aspect-square
+flex items-center justify-center
+overflow-hidden
+"
 >
 
-{/* Favorite */}
-
+{/* ===== FAVORITE ===== */}
 <button
 onClick={()=>toggleFavorite(brand.id)}
-className="absolute top-3 right-3 cursor-pointer hover:scale-110 transition text-xl"
+className="
+absolute top-3 right-3 z-20
+
+text-[22px]
+transition-all duration-200
+hover:scale-125 cursor-pointer
+"
 > 
-{favorites.includes(brand.id) ? "❤️" : "🤍"}
+<span className={`
+${favorites.includes(brand.id) ? "text-red-500" : "text-gray-300"}
+`}>
+♥
+</span>
 </button>
 
 
-{/* Logo */}
-
-<div className="flex-1 flex items-center justify-center">
-
+{/* ===== LOGO ===== */}
 {brand.logoUrl ? (
-
 <img
 src={brand.logoUrl}
-className="max-h-24 object-contain transition group-hover:scale-105"
+className="
+max-h-20 md:max-h-24 object-contain
+
+transition duration-300
+group-hover:scale-110
+"
 />
-
 ) : (
-
 <div className="h-16 w-16 bg-gray-100 rounded-lg"/>
-
 )}
 
-</div>
+
+{/* ===== HOVER ACTIONS ===== */}
+<div className="
+absolute inset-0
+flex items-end justify-center
+
+opacity-0 translate-y-6
+group-hover:opacity-100 group-hover:translate-y-0
+
+transition-all duration-300
+">
+
+<div className="
+w-full p-2
+
+bg-white/70 backdrop-blur-xl
 
 
-{/* Brand */}
+flex gap-1.5
+">
 
-<div className="text-center space-y-2">
+{/* GET LINK */}
+<button
+onClick={()=>handleGenerateLink(brand.id)}
+disabled={generating === brand.id}
+className="
+flex-1 text-[13px] font-medium py-2
 
-<a
-href={brand.websiteUrl}
-target="_blank"
-className="text-sm font-semibold hover:underline"
+bg-black text-white
+rounded-xl
+
+shadow-sm
+
+hover:bg-transparent hover:text-black
+hover:border hover:border-black
+
+transition-all duration-200
+cursor-pointer
+"
 > 
-{brand.name}
-</a>
+{generating===brand.id ? "Generating..." : "Get Link"}
+</button>
 
-{/* Commission Badge */}
+{/* DETAILS */}
+<button
+onClick={()=>openBrandDetails(brand)}
+className="
+flex-1 text-[13px] font-medium py-2
 
-<div className="flex justify-center">
+bg-white text-gray-700
+rounded-xl border border-gray-200
 
-<div className="text-xs font-medium px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition cursor-default">
+hover:bg-gray-100
 
-Up to {highestCommission}% {brand.commissionType?.toUpperCase()}
-
-</div>
+transition-all duration-200
+cursor-pointer
+"
+> 
+Details
+</button>
 
 </div>
 
@@ -281,48 +370,103 @@ Up to {highestCommission}% {brand.commissionType?.toUpperCase()}
 </motion.div>
 
 
-{/* Bottom Actions */}
-
-<div className="flex flex-col gap-2">
-
-{/* Buttons */}
-
-<div className="flex gap-2">
-
-<button
-onClick={()=>handleGenerateLink(brand.id)}
-disabled={generating === brand.id}
-className="flex-1 text-sm font-medium py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition cursor-pointer"
-> 
-{generating===brand.id ? "Generating..." : "Get Link"}
-</button>
-
-<button
-onClick={()=>openBrandDetails(brand)}
-className="flex-1 text-sm font-medium py-2 bg-gray-100 text-gray-700 rounded-lg border border-gray-200
-transition-all duration-200
-
-hover:bg-gray-100
-hover:border-gray-300 cursor-pointer
+{/* ===== INFO (Final Stable Layout) ===== */}
+<div className="
+flex flex-col gap-2
+w-full
 ">
-Details
-</button>
+
+{/* ===== TOP ROW (Brand + Active) ===== */}
+<div className="
+flex items-center justify-between
+gap-2
+min-w-0
+">
+
+{/* BRAND */}
+<a
+  href={brand.websiteUrl}
+  target="_blank"
+  className="
+  text-[14px] font-medium text-gray-800
+  leading-tight truncate
+  hover:text-black hover:underline transition
+"
+>
+  {brand.name}
+</a>
+
+{/* ACTIVE */}
+<div className="
+flex items-center gap-1.5
+shrink-0 whitespace-nowrap
+">
+
+<span className="
+text-[11px] font-medium text-blue-600
+hidden sm:inline
+">
+Active
+</span>
+
+<div className="
+w-5 h-5 min-w-[20px]
+rounded-full bg-blue-500
+flex items-center justify-center
+text-white text-[10px]
+shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
+">
+✓
+</div>
+
+</div>
 
 </div>
 
 
-{/* Categories Link */}
+{/* ===== BOTTOM ROW (Commission) ===== */}
+<div className="
+flex items-center justify-between
+gap-2
+min-w-0
+">
 
-<button
-onClick={()=>router.push(`/dashboard/retailers/${brand.id}`)}
-className="text-xs text-gray-500 hover:text-black hover:underline transition text-center cursor-pointer"
-> 
-ViewCategories
-</button>
+{/* LEFT (Up to + %) */}
+<div className="
+inline-flex items-center gap-1.5
+text-[11px] font-medium
+bg-gray-50 border border-gray-200
+rounded-full px-2.5 py-[4px]
+whitespace-nowrap
+">
+
+<span className="text-gray-400">
+Up to
+</span>
+
+<span className="text-green-600 font-semibold">
+{highestCommission}%
+</span>
 
 </div>
 
+{/* RIGHT (Type) */}
+<div className="
+text-[11.5px] font-medium text-gray-500
+tracking-[0.06em] uppercase
+truncate
+">
+{brand.commissionType}
 </div>
+
+</div>
+
+</div>
+</div>
+
+
+
+
 
 )
 
@@ -331,82 +475,180 @@ ViewCategories
 </div>
 
       {/* Modal */}
-      {modalOpen && generatedLink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl">
+{modalOpen && generatedLink && (
+  <div className="
+  fixed inset-0 z-50
 
-            <h3 className="text-xl font-semibold mb-6">
-              Your Affiliate Link
-            </h3>
+  bg-black/30 backdrop-blur-sm
 
-            <div className="relative mt-4">
-
-<input
-value={generatedLink}
-readOnly
-className="w-full bg-gray-100 rounded-xl py-3 pl-4 pr-12 text-sm outline-none"
-/>
-
-<button
-onClick={()=>{
-navigator.clipboard.writeText(generatedLink)
-setCopied(true)
-
-setTimeout(()=>{
-setCopied(false)
-},2000)
-}}
-className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition cursor-pointer"
+  flex items-center justify-center
+  px-4
+  "
+    onClick={() => setModalOpen(false)}
 >
 
-{copied ? (
+    <div
+    onClick={(e) => e.stopPropagation()}
+    className="
+    w-full max-w-md
 
-<span className="text-green-600 text-sm">✓</span>
+    bg-white
+    rounded-3xl
 
-) : (
+    p-7 sm:p-8
 
-<svg
-xmlns="http://www.w3.org/2000/svg"
-fill="none"
-viewBox="0 0 24 24"
-strokeWidth="1.5"
-stroke="currentColor"
-className="w-5 h-5"
-> 
-<path strokeLinecap="round" strokeLinejoin="round"
-d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M8 16h8a2 2 0 002-2V10a2 2 0 00-2-2H8a2 2 0 00-2 2v4a2 2 0 002 2z"/>
-</svg>
+    border border-gray-200
+    shadow-[0_20px_60px_rgba(0,0,0,0.12)]
 
-)}
+    animate-in fade-in zoom-in-95
+    ">
 
-</button>
+      {/* TITLE */}
+      <h3 className="text-[18px] font-semibold text-gray-900 mb-5">
+        Your Affiliate Link
+      </h3>
 
-</div>
+      {/* INPUT + INLINE COPY */}
+      <div className="relative">
 
-            <button
-onClick={()=>{
-navigator.clipboard.writeText(generatedLink)
-setCopied(true)
+        <input
+          value={generatedLink}
+          readOnly
+          className="
+          w-full h-12
 
-setTimeout(()=>{
-setCopied(false)
-},2000)
-}}
-className="mt-6 w-full bg-[#ff9a6c] text-white py-3 rounded-xl hover:opacity-90 transition font-medium cursor-pointer hover:bg-[#ffb38a]"
-> 
-{copied? "Copied ✓" : "Copy Link"}
-</button>
+          bg-gray-50
 
-            <button
-              onClick={() => setModalOpen(false)}
-              className="mt-4 w-full text-gray-500 text-sm cursor-pointer hover:text-gray-700 transition"
+          rounded-xl
+          border border-gray-200
+
+          pl-4 pr-14
+
+          text-sm text-gray-700
+
+          outline-none
+
+          focus:border-black
+          focus:ring-2 focus:ring-black/5
+
+          transition
+          "
+        />
+
+        {/* ICON COPY BUTTON */}
+        <button
+          onClick={()=>{
+            navigator.clipboard.writeText(generatedLink)
+            setCopied(true)
+
+            setTimeout(()=>{
+              setCopied(false)
+            },2000)
+          }}
+          className="
+          absolute right-2 top-1/2 -translate-y-1/2
+
+          h-9 w-9
+
+          flex items-center justify-center
+
+          rounded-lg
+
+          bg-white
+          border border-gray-200
+
+          shadow-sm
+
+          hover:bg-gray-100
+
+          transition-all duration-200
+          cursor-pointer
+          "
+        >
+
+          {copied ? (
+            <span className="text-green-600 text-sm font-semibold">
+              ✓
+            </span>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.8"
+              stroke="currentColor"
+              className="w-4 h-4 text-gray-600"
             >
-              Close
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M8 16h8a2 2 0 002-2V10a2 2 0 00-2-2H8a2 2 0 00-2 2v4a2 2 0 002 2z"
+              />
+            </svg>
+          )}
 
-          </div>
-        </div>
-      )}
+        </button>
+
+      </div>
+
+      {/* MAIN COPY BUTTON */}
+      <button
+        onClick={()=>{
+          navigator.clipboard.writeText(generatedLink)
+          setCopied(true)
+
+          setTimeout(()=>{
+            setCopied(false)
+          },2000)
+        }}
+        className="
+        mt-5 w-full h-11
+
+        text-sm font-semibold tracking-[0.02em]
+
+        text-white
+        bg-black
+
+        rounded-xl
+
+        border border-black
+        shadow-sm
+
+        hover:bg-white hover:text-black
+
+        transition-all duration-300
+        cursor-pointer
+        "
+      >
+        {copied ? "Copied ✓" : "Copy Link"}
+      </button>
+
+      {/* CLOSE */}
+      <button
+        onClick={() => setModalOpen(false)}
+        className="
+        mt-4 w-full
+
+        text-sm font-medium
+        text-gray-500
+
+        hover:text-gray-700
+
+        transition
+        cursor-pointer
+        "
+      >
+        Close
+      </button>
+
+      {/* HELPER TEXT (SaaS touch 🔥) */}
+      <p className="text-xs text-gray-400 text-center mt-3">
+        Share this link with your audience to start earning.
+      </p>
+
+    </div>
+  </div>
+)}
 
       {detailsOpen && selectedBrand && (
 
@@ -433,7 +675,7 @@ onClick={()=>setDetailsOpen(false)}
 
 <button
 onClick={()=>setDetailsOpen(false)}
-className="text-gray-400 hover:text-black text-lg"
+className="text-gray-400 hover:text-black text-lg cursor-pointer"
 > 
 ✕
 </button>

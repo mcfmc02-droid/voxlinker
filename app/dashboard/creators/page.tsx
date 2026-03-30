@@ -31,7 +31,27 @@ export default function CreatorsPage() {
           </PageSubtitle>
         </div>
 
-        <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md transition cursor-pointer">
+        <button className="
+px-5 py-2.5
+rounded-xl
+text-sm font-medium
+
+bg-black
+text-white
+
+border border-black
+
+transition-all duration-300
+
+hover:bg-white
+hover:text-black
+hover:border-black
+hover:shadow-md
+
+active:scale-[0.97]
+
+cursor-pointer
+">
           Invite Creator
         </button>
 

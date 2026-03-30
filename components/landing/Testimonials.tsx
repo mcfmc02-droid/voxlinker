@@ -7,27 +7,27 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 const testimonials = [
 {
 text:"VoxLinker completely changed how I monetize my audience. Everything is smooth and intuitive.",
-name:"@creatorone",
+name:"@noarocha",
 image:"/avatars/1.jpg"
 },
 {
 text:"I finally feel in control of my affiliate revenue. The insights are insane.",
-name:"@growthcreator",
+name:"@reesemiller",
 image:"/avatars/2.jpg"
 },
 {
 text:"This platform helped me scale my income without adding more work.",
-name:"@digitalinfluencer",
+name:"@corinavillanueva",
 image:"/avatars/3.jpg"
 },
 {
 text:"I love how simple everything is. From links to tracking, it's all seamless.",
-name:"@contentpro",
+name:"@oliviawilson",
 image:"/avatars/4.jpg"
 },
 {
 text:"The best affiliate platform I’ve used. Clean, powerful, and fast.",
-name:"@topcreator",
+name:"@anteojos-focales",
 image:"/avatars/5.jpg"
 },
 ]
@@ -76,12 +76,19 @@ Creators are building real income streams with VoxLinker.
 <button
 onClick={prev}
 className="
-absolute left-[-55px] md:left-[-80px]
+hidden sm:flex
+
+absolute 
+left-[-55px] md:left-[-80px]
 top-1/2 -translate-y-1/2
 z-40
+
+items-center justify-center
 p-3 rounded-full
+
 bg-white/90 backdrop-blur-md
 shadow-md
+
 hover:scale-110 hover:bg-white
 transition-all duration-300
 cursor-pointer
@@ -94,12 +101,19 @@ cursor-pointer
 <button
 onClick={next}
 className="
-absolute right-[-55px] md:right-[-80px]
+hidden sm:flex
+
+absolute 
+right-[-55px] md:right-[-80px]
 top-1/2 -translate-y-1/2
 z-40
+
+items-center justify-center
 p-3 rounded-full
+
 bg-white/90 backdrop-blur-md
 shadow-md
+
 hover:scale-110 hover:bg-white
 transition-all duration-300
 cursor-pointer
@@ -145,7 +159,7 @@ select-none
 <img
 src={testimonials[index].image}
 alt="creator"
-className="w-20 h-20 mb-6 rounded-full object-cover shadow-md"
+className="w-24 h-24 md:w-28 md:h-28 mb-6 rounded-full object-cover shadow-md"
 />
 
 {/* TEXT */}

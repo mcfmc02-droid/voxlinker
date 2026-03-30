@@ -138,88 +138,133 @@ export default function Dashboard() {
   </div>
 
   {/* RIGHT : Filters */}
-  <div className="flex items-center gap-3">
+<div className="
+flex flex-wrap items-center
+gap-2 sm:gap-3
+">
 
-    <select
-  value={customMode ? "custom" : days}
-  onChange={(e) => {
-    const value = e.target.value
+  {/* SELECT */}
+  <select
+    value={customMode ? "custom" : days}
+    onChange={(e) => {
+      const value = e.target.value
 
-    if (value === "custom") {
-      setCustomMode(true)
-    } else if (value === "thisMonth") {
-      setCustomMode(false)
+      if (value === "custom") {
+        setCustomMode(true)
+      } else if (value === "thisMonth") {
+        setCustomMode(false)
 
-      const now = new Date()
-      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+        const now = new Date()
+        const start = new Date(now.getFullYear(), now.getMonth(), 1)
 
-      const diff = Math.ceil(
-        (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-      )
+        const diff = Math.ceil(
+          (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+        )
 
-      setDays(diff)
-    } 
-    else if (value === "lastMonth") {
-      setCustomMode(false)
+        setDays(diff)
+      } 
+      else if (value === "lastMonth") {
+        setCustomMode(false)
 
-      const now = new Date()
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const end = new Date(now.getFullYear(), now.getMonth(), 0)
+        const now = new Date()
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const end = new Date(now.getFullYear(), now.getMonth(), 0)
 
-      setStartDate(start.toISOString().split("T")[0])
-      setEndDate(end.toISOString().split("T")[0])
-      setDays(0)
-      setCustomMode(true)
-    } 
-    else {
-      setCustomMode(false)
-      setDays(Number(value))
-      router.replace(`/dashboard?range=${value}`)
-    }
-  }}
+        setStartDate(start.toISOString().split("T")[0])
+        setEndDate(end.toISOString().split("T")[0])
+        setDays(0)
+        setCustomMode(true)
+      } 
+      else {
+        setCustomMode(false)
+        setDays(Number(value))
+        router.replace(`/dashboard?range=${value}`)
+      }
+    }}
 
-  className="bg-white px-4 py-2 h-10 rounded-xl border border-gray-200 shadow-sm text-sm text-gray-600 outline-none cursor-pointer hover:border-gray-300 transition"
->
-  <option value={1}>Yesterday</option>
-  <option value={7}>Last 7 Days</option>
-  <option value={14}>Last 14 Days</option>
-  <option value={30}>Last 30 Days</option>
-  <option value="thisMonth">This Month</option>
-  <option value="lastMonth">Last Month</option>
-  <option value="custom">Custom Range</option>
-</select>
+    className="
+    w-full sm:w-auto
 
-    {customMode && (
-      <>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="bg-white h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-600 outline-none cursor-pointer hover:border-gray-300 transition"
-        />
+    bg-white px-4 py-2 h-10
+    rounded-xl border border-gray-200 shadow-sm
 
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="bg-white h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-600 outline-none cursor-pointer hover:border-gray-300 transition"
-        />
+    text-sm text-gray-600
+    outline-none cursor-pointer
 
-        <button
-          onClick={() => {
-            if (startDate && endDate) {
-              setDays(0)
-            }
-          }}
-          className="h-10 px-5 bg-black text-white rounded-xl text-sm cursor-pointer hover:opacity-90 transition"
-        >
-          Apply
-        </button>
-      </>
-    )}
+    hover:border-gray-300 transition
+    "
+  >
+    <option value={1}>Yesterday</option>
+    <option value={7}>Last 7 Days</option>
+    <option value={14}>Last 14 Days</option>
+    <option value={30}>Last 30 Days</option>
+    <option value="thisMonth">This Month</option>
+    <option value="lastMonth">Last Month</option>
+    <option value="custom">Custom Range</option>
+  </select>
 
-  </div>
+  {customMode && (
+    <>
+      {/* START DATE */}
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        className="
+        w-full sm:w-auto
 
+        bg-white h-10 px-3
+        rounded-xl border border-gray-200
+
+        text-sm text-gray-600
+        outline-none cursor-pointer
+
+        hover:border-gray-300 transition
+        "
+      />
+
+      {/* END DATE */}
+      <input
+        type="date"
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+        className="
+        w-full sm:w-auto
+
+        bg-white h-10 px-3
+        rounded-xl border border-gray-200
+
+        text-sm text-gray-600
+        outline-none cursor-pointer
+
+        hover:border-gray-300 transition
+        "
+      />
+
+      {/* APPLY */}
+      <button
+        onClick={() => {
+          if (startDate && endDate) {
+            setDays(0)
+          }
+        }}
+        className="
+        w-full sm:w-auto
+
+        h-10 px-5
+        bg-black text-white
+        rounded-xl text-sm font-medium
+
+        hover:opacity-90 transition
+        cursor-pointer
+        "
+      >
+        Apply
+      </button>
+    </>
+  )}
+
+</div>
 </div>
 
 

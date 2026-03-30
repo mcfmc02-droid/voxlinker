@@ -69,7 +69,26 @@ Manage your influencer marketing campaigns.
 
 <button
 onClick={()=>setOpen(true)}
-className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium cursor-pointer hover:from-[#ff9a6c] hover:to-[#ffb48a] transition"
+className="
+px-5 py-2.5
+rounded-xl
+text-sm font-medium
+
+bg-black
+text-white
+
+border border-black
+
+transition-all duration-300
+
+hover:bg-white
+hover:text-black
+hover:border-black
+
+active:scale-[0.97]
+
+cursor-pointer
+"
 > 
 Create Campaign
 </button>
@@ -117,35 +136,113 @@ Create Campaign
 Create Campaign
 </h2>
 
-<input
-placeholder="Campaign name"
-value={name}
-onChange={(e)=>setName(e.target.value)}
-className="w-full border rounded-lg px-3 py-2"
-/>
+<div className="flex flex-col gap-4">
 
-<input
-placeholder="Budget"
-value={budget}
-onChange={(e)=>setBudget(e.target.value)}
-className="w-full border rounded-lg px-3 py-2"
-/>
+  {/* INPUT - CAMPAIGN */}
+  <input
+    placeholder="Campaign name"
+    value={name}
+    onChange={(e)=>setName(e.target.value)}
+    className="
+    w-full h-11
 
-<div className="flex justify-end gap-3">
+    px-4
+    rounded-xl
 
-<button
-onClick={()=>setOpen(false)}
-className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 rounded-lg"
-> 
-Cancel
-</button>
+    border border-gray-200
+    bg-white
 
-<button
-onClick={createCampaign}
-className="bg-black text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-800 transition"
-> 
-Create
-</button>
+    text-sm text-gray-700
+
+    outline-none
+
+    transition-all duration-200
+
+    placeholder:text-gray-400
+
+    focus:border-black
+    focus:ring-2 focus:ring-black/5
+    "
+  />
+
+  {/* INPUT - BUDGET */}
+  <input
+    placeholder="Budget"
+    value={budget}
+    onChange={(e)=>setBudget(e.target.value)}
+    className="
+    w-full h-11
+
+    px-4
+    rounded-xl
+
+    border border-gray-200
+    bg-white
+
+    text-sm text-gray-700
+
+    outline-none
+
+    transition-all duration-200
+
+    placeholder:text-gray-400
+
+    focus:border-black
+    focus:ring-2 focus:ring-black/5
+    "
+  />
+
+  {/* ACTIONS */}
+  <div className="flex justify-end gap-3 pt-2">
+
+    {/* CANCEL */}
+    <button
+      onClick={()=>setOpen(false)}
+      className="
+      px-5 h-10
+
+      text-sm font-medium
+      text-gray-600
+
+      rounded-xl
+
+      border border-gray-200
+
+      hover:bg-gray-100
+
+      transition
+      cursor-pointer
+      "
+    >
+      Cancel
+    </button>
+
+    {/* CREATE */}
+    <button
+      onClick={createCampaign}
+      className="
+      px-6 h-10
+
+      text-sm font-semibold tracking-[0.02em]
+
+      text-white
+      bg-black
+
+      rounded-xl
+
+      border border-black
+      shadow-sm
+
+      hover:bg-white hover:text-black
+
+      transition-all duration-300
+      cursor-pointer
+      "
+    >
+      Create Campaign
+    </button>
+
+  </div>
 
 </div>
 

@@ -33,14 +33,43 @@ if (!["W9", "W8BEN"].includes(formType)) {
     }
 
     // 🔥 Validate file type
-    if (file.type !== "application/pdf") {
-      return NextResponse.json({ error: "Only PDF allowed" }, { status: 400 })
-    }
+    const allowedTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+]
+
+const allowedMimeTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+]
+
+const extension = file.name.split(".").pop()?.toLowerCase()
+
+const allowedExtensions = ["pdf", "doc", "docx"]
+
+if (
+  !allowedMimeTypes.includes(file.type) ||
+  !allowedExtensions.includes(extension || "")
+) {
+  return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
+}
+
+if (!extension || !allowedExtensions.includes(extension.toLowerCase())) {
+  return NextResponse.json({ error: "Invalid file extension" }, { status: 400 })
+}
+
+if (file.size > 5 * 1024 * 1024) {
+  return NextResponse.json({ error: "File too large" }, { status: 400 })
+}
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const fileName = `${user.id}_${Date.now()}.pdf`
+    
+    const fileName = `${user.id}_${Date.now()}.${extension}`
+
     const filePath = path.join(process.cwd(), "public/uploads", fileName)
 
     await writeFile(filePath, buffer)
@@ -48,14 +77,23 @@ if (!["W9", "W8BEN"].includes(formType)) {
     const fileUrl = `/uploads/${fileName}`
 
     // 🔥 Save to DB
-    const tax = await prisma.taxForm.create({
-  data: {
-    userId: user.id,
-    formType: formType as TaxFormType,   // ✅ FIX
+    const tax = await prisma.taxForm.upsert({
+  where: { userId: user.id },
+  update: {
+    formType: formType as TaxFormType,
     taxId,
     country,
     fileUrl,
-    status: TaxStatus.PENDING,           // ✅ FIX
+    status: TaxStatus.PENDING,
+    updatedAt: new Date(),
+  },
+  create: {
+    userId: user.id,
+    formType: formType as TaxFormType,
+    taxId,
+    country,
+    fileUrl,
+    status: TaxStatus.PENDING,
   },
 })
 

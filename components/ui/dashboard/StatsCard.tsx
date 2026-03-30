@@ -32,23 +32,27 @@ export function StatsCard({
       onClick={onClick}
       className={`cursor-pointer bg-white p-6 rounded-2xl border shadow-sm transition duration-300
 h-[120px] flex flex-col justify-between
-${active ? "border-emerald-300 shadow-md scale-[1.02]" : "border-gray-200 hover:shadow-md"}
+${active
+  ? "bg-gradient-to-br from-black to-gray-900 text-white border-black shadow-xl scale-[1.03]"
+  : "bg-white border-gray-200 hover:shadow-md"}
 `}
     >
 
       {/* Title */}
-      <p className="text-sm text-gray-500 mb-2">
+      <p className={`text-sm mb-2 ${active ? "text-gray-300" : "text-gray-500"}`}>
         {title}
       </p>
 
       <div className="flex items-center justify-between mb-2">
 
         {/* Value */}
-        <p
-          className={`text-xl font-semibold tracking-tight ${
-            highlight ? "text-[#ff9a6c]" : ""
-          }`}
-        >
+        <p className={`text-xl font-semibold ${
+  active
+    ? "text-white"
+    : highlight
+    ? "text-[#ff9a6c]"
+    : ""
+}`}>
           {value}
         </p>
 

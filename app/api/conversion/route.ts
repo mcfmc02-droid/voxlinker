@@ -31,55 +31,38 @@ export async function GET(req: NextRequest) {
 
     let commission = 0
 
-    // CPA
-    if (offer.type === "CPA" && offer.cpaAmount) {
-      commission = offer.cpaAmount
+    // ===== NEW LOGIC =====
+    if (offer.offerType === "CPA") {
+      commission = offer.commissionValue
     }
 
-    // RevShare
-    if (offer.type === "REVSHARE" && offer.revsharePercentage) {
-      commission = (revenue * offer.revsharePercentage) / 100
+    if (offer.offerType === "REVSHARE") {
+      commission = (revenue * offer.commissionValue) / 100
     }
 
-    // Hybrid
-    if (offer.type === "HYBRID") {
-      if (offer.hybridCpaAmount) {
-        commission += offer.hybridCpaAmount
-      }
-      if (offer.hybridRevsharePercent) {
-        commission += (revenue * offer.hybridRevsharePercent) / 100
-      }
+    // إذا عندك HYBRID مستقبلاً
+    if (offer.offerType === "HYBRID") {
+      commission = offer.commissionValue // أو تطور لاحقاً
     }
 
-    const status = offer.autoApprove ? "APPROVED" : "PENDING"
+    const status = "PENDING" // مؤقت (لأن autoApprove غير موجود)
 
     const conversion = await prisma.conversion.create({
       data: {
         clickId: click.clickId,
+        clickDbId: click.id, // 🔥 مهم جداً
+
         affiliateLinkId: click.affiliateLinkId,
         offerId: click.offerId,
         userId: click.userId,
+
+        orderId: `ORD-${Date.now()}`, // 🔥 مهم لأن الحقل required
+
         revenue,
         commission,
         status
       }
     })
-
-    // إذا Auto Approve → أضف إلى Wallet
-    if (status === "APPROVED") {
-      await prisma.wallet.upsert({
-        where: { userId: click.userId },
-        update: {
-          balance: {
-            increment: commission
-          }
-        },
-        create: {
-          userId: click.userId,
-          balance: commission
-        }
-      })
-    }
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/app/context/AuthContext";
+import CookieBanner from "@/components/CookieBanner"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,10 +20,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "MyPlatform",
-  description: "Affiliate Platform Dashboard",
-};
+
+export const metadata = {
+  title: "VoxLinker",
+  description: "Monetize your influence with powerful affiliate tools.",
+}
 
 export default function RootLayout({
   children,
@@ -37,7 +39,9 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <CookieBanner />
       </body>
     </html>
+    
   );
 }

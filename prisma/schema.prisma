@@ -145,7 +145,7 @@ model User {
 
   createdAt DateTime @default(now())
 
-  adminLogs              AdminLog[]
+  
   withdrawals            Withdrawal[]
   affiliateLinks         AffiliateLink[]
   clicks                 Click[]
@@ -158,6 +158,9 @@ model User {
   creatorCampaigns       CreatorCampaign[]
   favorites              FavoriteBrand[]
   apiTokens              ApiToken[]
+
+ adminLogs      AdminLog[] @relation("AdminActions")
+targetUserLogs AdminLog[] @relation("TargetUser")
 }
 
 //////////////////////////////////////////////////////
@@ -216,18 +219,20 @@ model Withdrawal {
 model TaxForm {
   id Int @id @default(autoincrement())
 
-  userId   Int
+  userId   Int @unique   // 🔥 هذا هو الحل
   formType TaxFormType
   status   TaxStatus   @default(PENDING)
 
   country String
   taxId   String?
+  rejectionReason String?
 
   fileUrl String
 
   verifiedAt DateTime?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 }
@@ -393,6 +398,9 @@ model Offer {
 
   offerType OfferType
   commissionValue Float
+
+  // NEW
+  postbackSecret String?   // حماية postback
 
   cookieDays Int @default(30)
 
@@ -653,16 +661,39 @@ model ApiToken {
 }
 
 //////////////////////////////////////////////////////
+// model Blog Post
+////////////////////////////////////////////////////// 
+
+model BlogPost {
+  id        Int      @id @default(autoincrement())
+  title     String
+  slug      String   @unique
+  excerpt   String
+  content   String
+  image     String
+  category  String
+
+  isFeatured Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+//////////////////////////////////////////////////////
 // ADMIN LOG
 //////////////////////////////////////////////////////
 
 model AdminLog {
-  id         Int      @id @default(autoincrement())
-  adminId    Int
-  action     String
-  targetUser Int?
-  details    String?
-  createdAt  DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  adminId      Int
+  action       String
+  targetUserId Int?
+  details      String?
+  createdAt    DateTime @default(now())
 
-  admin User @relation(fields: [adminId], references: [id])
+  admin      User  @relation("AdminActions", fields: [adminId], references: [id])
+  targetUser User? @relation("TargetUser", fields: [targetUserId], references: [id])
 }

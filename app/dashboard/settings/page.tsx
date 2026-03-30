@@ -245,29 +245,56 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-10 mb-10 max-w-3xl mt-10">
 
             <div>
-              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                First Name
-              </label>
-              <input
-                type="text"
-                className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </div>
+  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+    First Name
+  </label>
 
-            <div>
-              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                Last Name
-              </label>
-              <input
-                type="text"
-                className="w-full mt-2 border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-[#ff9a6c]"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+  <div className="relative">
+    <input
+      type="text"
+      value={firstName}
+      readOnly
+      className="
+      w-full mt-2 border-b border-gray-200 py-2 text-sm
+      text-gray-500 bg-transparent
+      focus:outline-none focus:border-[#ff9a6c]
+      cursor-not-allowed
+      pr-8
+      "
+    />
 
-              />
-            </div>
+    <Lock
+      size={16}
+      className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
+    />
+  </div>
+</div>
+
+<div>
+  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+    Last Name
+  </label>
+
+  <div className="relative">
+    <input
+      type="text"
+      value={lastName}
+      readOnly
+      className="
+      w-full mt-2 border-b border-gray-200 py-2 text-sm
+      text-gray-500 bg-transparent
+      focus:outline-none focus:border-[#ff9a6c]
+      cursor-not-allowed
+      pr-8
+      "
+    />
+
+    <Lock
+      size={16}
+      className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
+    />
+  </div>
+</div>
 
              {/* Email */}
 
@@ -307,13 +334,6 @@ export default function SettingsPage() {
 
           </div>
 
-          <button
-          type="button"
-            onClick={handleProfileSave}
-            className="px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md cursor-pointer"
-          >
-            Save Changes
-          </button>
 
 
         </div>
@@ -414,7 +434,7 @@ export default function SettingsPage() {
       </FormLabel>
 
       <div className="mt-2 text-sm text-gray-600">
-        myplatform.com/
+        voxlinker.com/
         <span className="font-medium text-black">
           {handle || "username"}
         </span>
