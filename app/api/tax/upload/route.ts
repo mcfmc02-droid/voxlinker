@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserFromSession } from "@/lib/auth"
-import { writeFile } from "fs/promises"
-import path from "path"
+import { supabase } from "@/lib/supabase"
 import { TaxFormType, TaxStatus } from "@prisma/client"
 
 export async function POST(req: Request) {
@@ -21,81 +20,73 @@ export async function POST(req: Request) {
     const country = formData.get("country") as string
 
     // ✅ Validate form type
-if (!["W9", "W8BEN"].includes(formType)) {
-  return NextResponse.json(
-    { error: "Invalid form type" },
-    { status: 400 }
-  )
-}
+    if (!["W9", "W8BEN"].includes(formType)) {
+      return NextResponse.json({ error: "Invalid form type" }, { status: 400 })
+    }
 
     if (!file || !formType || !country) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
 
-    // 🔥 Validate file type
-    const allowedTypes = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-]
+    // ✅ Validate file
+    const extension = file.name.split(".").pop()?.toLowerCase()
+    const allowedExtensions = ["pdf", "doc", "docx"]
 
-const allowedMimeTypes = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-]
+    if (!extension || !allowedExtensions.includes(extension)) {
+      return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
+    }
 
-const extension = file.name.split(".").pop()?.toLowerCase()
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large" }, { status: 400 })
+    }
 
-const allowedExtensions = ["pdf", "doc", "docx"]
-
-if (
-  !allowedMimeTypes.includes(file.type) ||
-  !allowedExtensions.includes(extension || "")
-) {
-  return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
-}
-
-if (!extension || !allowedExtensions.includes(extension.toLowerCase())) {
-  return NextResponse.json({ error: "Invalid file extension" }, { status: 400 })
-}
-
-if (file.size > 5 * 1024 * 1024) {
-  return NextResponse.json({ error: "File too large" }, { status: 400 })
-}
-
+    // 🔥 Convert file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    
-    const fileName = `${user.id}_${Date.now()}.${extension}`
+    // 🔥 Folder per user
+    const fileName = `${Date.now()}_${file.name}`
+    const filePath = `${user.id}/${fileName}`
 
-    const filePath = path.join(process.cwd(), "public/uploads", fileName)
+    // 🔥 Upload to Supabase
+    const { error: uploadError } = await supabase.storage
+      .from("tax-documents")
+      .upload(filePath, buffer, {
+        contentType: file.type,
+      })
 
-    await writeFile(filePath, buffer)
+    if (uploadError) {
+      console.error("SUPABASE UPLOAD ERROR:", uploadError)
+      return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    }
 
-    const fileUrl = `/uploads/${fileName}`
+    // 🔥 Public URL
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("tax-documents")
+      .getPublicUrl(filePath)
+
+    const fileUrl = publicUrlData.publicUrl
 
     // 🔥 Save to DB
     const tax = await prisma.taxForm.upsert({
-  where: { userId: user.id },
-  update: {
-    formType: formType as TaxFormType,
-    taxId,
-    country,
-    fileUrl,
-    status: TaxStatus.PENDING,
-    updatedAt: new Date(),
-  },
-  create: {
-    userId: user.id,
-    formType: formType as TaxFormType,
-    taxId,
-    country,
-    fileUrl,
-    status: TaxStatus.PENDING,
-  },
-})
+      where: { userId: user.id },
+      update: {
+        formType: formType as TaxFormType,
+        taxId,
+        country,
+        fileUrl,
+        status: TaxStatus.PENDING,
+      },
+      create: {
+        userId: user.id,
+        formType: formType as TaxFormType,
+        taxId,
+        country,
+        fileUrl,
+        status: TaxStatus.PENDING,
+      },
+    })
 
     return NextResponse.json({
       success: true,
