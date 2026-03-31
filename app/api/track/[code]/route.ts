@@ -7,10 +7,10 @@ import { trackClick } from "@/lib/analytics"
 
 export async function GET(
   req: Request,
-  { params }: { params: { code: string } }
+  context: { params: { code: string } }
 ) {
   try {
-    const { code } = params
+    const { code } = context.params
 
     // 🔎 Fetch affiliate link
     const affiliateLink = await prisma.affiliateLink.findUnique({

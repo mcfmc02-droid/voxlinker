@@ -4,7 +4,7 @@ import { getUserFromSession } from "@/lib/auth"
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const user = await getUserFromSession()
 
@@ -12,7 +12,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const id = Number(params.id)
+  const id = Number(context.params.id)
 
   try {
     if (body.action === "approve") {

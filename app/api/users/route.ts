@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         email: body.email,
         name: body.name,
         password: hashedPassword,
-        role: "MARKETER",
+        role: "AFFILIATE",
       },
     });
 

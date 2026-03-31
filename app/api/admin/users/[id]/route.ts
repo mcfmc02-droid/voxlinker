@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken"
 /* ================= PATCH USER ================= */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     /* ========= AUTH ========= */
@@ -57,7 +57,7 @@ export async function PATCH(
 
     /* ========= UPDATE USER ========= */
     const updatedUser = await prisma.user.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(context.params.id) },
       data: { status: body.status },
     })
 

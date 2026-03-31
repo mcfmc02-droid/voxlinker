@@ -3,10 +3,10 @@ import { NextResponse } from "next/server"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
 
-  const campaignId = Number(params.id)
+  const campaignId = Number(context.params.id)
 
   const body = await req.json()
   const { creatorId } = body
