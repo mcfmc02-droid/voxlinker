@@ -36,6 +36,7 @@ export async function requestWithdrawal(userId: number, amount: number) {
         userId,
         walletId: wallet.id,
         amount,
+        netAmount: amount, // ✅ الحل هنا
         status: "PENDING",
       },
     })
