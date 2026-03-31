@@ -5,19 +5,19 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    const brand = await prisma.brand.create({
-      data: {
-        name: body.name,
-        slug: body.slug,
-        logoUrl: body.logoUrl,
-        websiteUrl: body.websiteUrl,
-        description: body.description,
-        commissionType: body.commissionType,
-        defaultCommission: body.defaultCommission || null
-      
-      },
-    })
-
+   const brand = await prisma.brand.create({
+  data: {
+    name: String(body.name),
+    slug: String(body.slug),
+    logoUrl: body.logoUrl ?? null,
+    websiteUrl: body.websiteUrl ?? null,
+    description: body.description ?? null,
+    commissionType: body.commissionType || "CPA", // fallback
+    defaultCommission: body.defaultCommission
+      ? Number(body.defaultCommission)
+      : null,
+  },
+})
     return NextResponse.json(brand)
   } catch (error) {
     console.error(error)
