@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 export async function POST(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ){
 
   const body = await req.json()
@@ -13,7 +13,7 @@ export async function POST(
     where:{
       creatorId_campaignId:{
         creatorId:Number(creatorId),
-        campaignId:Number(context.params.id)
+        campaignId:Number((await context.params).id)
       }
     }
   })

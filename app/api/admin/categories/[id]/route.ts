@@ -3,13 +3,15 @@ import { NextResponse } from "next/server"
 
 export async function PATCH(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params   // ✅ الحل هنا
+
     const body = await req.json()
 
     const updated = await prisma.brandCategory.update({
-      where: { id: Number(context.params.id) },
+      where: { id: Number(id) },          // ✅ الآن صحيح
       data: {
         commissionRate: body.commissionRate,
         status: body.status,

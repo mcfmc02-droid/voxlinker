@@ -4,7 +4,7 @@ import { getUserFromSession } from "@/lib/auth"
 
 export async function PATCH(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const user = await getUserFromSession()
 
@@ -12,13 +12,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const id = Number(context.params.id)
+  const { id } = await context.params
 
   try {
     if (body.action === "approve") {
-      await approveWithdrawal(id)
+      await approveWithdrawal(Number(id))
     } else if (body.action === "reject") {
-      await rejectWithdrawal(id)
+      await rejectWithdrawal(Number(id))
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })
     }

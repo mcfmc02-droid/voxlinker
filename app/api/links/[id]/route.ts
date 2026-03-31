@@ -4,7 +4,7 @@ import { getUserFromSession } from "@/lib/auth"
 
 export async function DELETE(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const user = await getUserFromSession()
 
@@ -12,10 +12,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const id = Number(context.params.id)
-
+  const { id } = await context.params
   const link = await prisma.affiliateLink.findUnique({
-    where: { id }
+    where: { id: Number(id) }
   })
 
   if (!link || link.userId !== user.id) {
@@ -23,7 +22,7 @@ export async function DELETE(
   }
 
   await prisma.affiliateLink.delete({
-    where: { id }
+    where: { id: Number(id) }
   })
 
   return NextResponse.json({ success: true })
