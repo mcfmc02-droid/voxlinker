@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     logoUrl: body.logoUrl ?? null,
     websiteUrl: body.websiteUrl ?? null,
     description: body.description ?? null,
-    commissionType: body.commissionType || "CPA", // fallback
+    commissionType: body.commissionType || "PERCENTAGE", // fallback
     defaultCommission: body.defaultCommission
       ? Number(body.defaultCommission)
       : null,
