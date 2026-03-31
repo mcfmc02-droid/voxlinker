@@ -12,7 +12,9 @@ export async function POST(req: Request) {
         logoUrl: body.logoUrl,
         websiteUrl: body.websiteUrl,
         description: body.description,
+        commissionType: body.commissionType,
         defaultCommission: body.defaultCommission || null
+      
       },
     })
 
