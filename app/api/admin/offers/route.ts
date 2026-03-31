@@ -12,15 +12,17 @@ export async function POST(req: Request) {
   const body = await req.json()
 
   const offer = await prisma.offer.create({
-    data: {
-      name: body.name,
-      description: body.description,
-      commissionType: body.commissionType,
-      commissionValue: body.commissionValue,
-      cookieDays: body.cookieDays ?? 30,
-      brandId: Number(body.brandId),
-    },
-  })
+  data: {
+    name: String(body.name),
+    description: body.description ?? null,
+    offerType: body.offerType || "CPA", // ✅ مهم جداً
+    commissionValue: body.commissionValue
+      ? Number(body.commissionValue)
+      : 0,
+    cookieDays: body.cookieDays ?? 30,
+    brandId: Number(body.brandId),
+  },
+})
 
   return NextResponse.json({ offer })
 }
