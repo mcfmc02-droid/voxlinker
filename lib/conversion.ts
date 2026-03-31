@@ -14,15 +14,22 @@ export async function approveConversion(conversionId: number) {
 
     let commissionAmount = 0
 
-    if (conversion.offer.payoutType === "PERCENTAGE") {
+    const offer = conversion.offer
+
+    // ✅ حساب العمولة حسب نوع العرض
+    if (offer.offerType === "CPA") {
+      // مبلغ ثابت
+      commissionAmount = offer.commissionValue || 0
+    } else if (offer.offerType === "REVSHARE") {
+      // نسبة من الإيراد
       commissionAmount =
         (conversion.revenue || 0) *
-        (conversion.offer.commissionRate || 0)
-    }
-
-    if (conversion.offer.payoutType === "FIXED") {
+        ((offer.commissionValue || 0) / 100)
+    } else if (offer.offerType === "HYBRID") {
+      // مثال بسيط: ثابت + نسبة (يمكنك تعديله لاحقاً)
       commissionAmount =
-        conversion.offer.fixedCommission || 0
+        (offer.commissionValue || 0) +
+        (conversion.revenue || 0) * 0.1
     }
 
     await tx.conversion.update({
