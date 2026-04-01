@@ -266,8 +266,24 @@ setSuggestion(fix);
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center bg-[#fff7f3] p-10">
-        <div className="w-full max-w-2xl bg-white p-14 rounded-3xl shadow-xl">
+      <div className="
+flex w-full lg:w-1/2 items-center justify-center
+bg-[#fff7f3]
+
+px-5 sm:px-8 lg:px-10
+py-10 sm:py-12
+">
+        <div className="
+w-full
+max-w-[94%] sm:max-w-2xl
+
+bg-white
+
+p-6 sm:p-10 lg:p-14
+
+rounded-2xl sm:rounded-3xl
+shadow-xl
+">
 
           <div className="text-center mb-10">
             <div className="text-3xl font-semibold tracking-tight">
@@ -409,7 +425,7 @@ setSuggestion(fix);
               >
                 <h2 className="text-xl font-semibold">Personal & Address</h2>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <input
                     type="text"
                     placeholder="First Name"

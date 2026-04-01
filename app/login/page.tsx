@@ -76,8 +76,24 @@ router.push("/dashboard");
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center bg-[#fff7f3] p-10">
-        <div className="w-full max-w-md bg-white p-14 rounded-3xl shadow-xl">
+      <div className="
+flex w-full lg:w-1/2 items-center justify-center
+bg-[#fff7f3]
+
+px-5 sm:px-8 lg:px-10
+py-10 sm:py-12
+">
+        <div className="
+w-full
+max-w-[94%] sm:max-w-md
+
+bg-white
+
+p-6 sm:p-10 lg:p-14
+
+rounded-2xl sm:rounded-3xl
+shadow-xl
+">
 
           {/* Logo */}
           <div className="text-center mb-10">

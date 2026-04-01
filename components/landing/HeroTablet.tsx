@@ -84,17 +84,29 @@ return ()=>clearInterval(interval)
 
 return(
 
-<div className="relative flex justify-center items-center -mt-10">
+<div className="relative w-full flex justify-center items-center">
 
 {/* glow */}
-<div className="absolute w-[680px] h-[680px] bg-white opacity-8 blur-[120px]" />
+<div className="
+absolute
+w-[300px]
+min-[500px]:w-[420px]
+min-[768px]:w-[520px]
+min-[1024px]:w-[680px]
+
+h-[300px]
+min-[500px]:h-[420px]
+min-[768px]:h-[520px]
+min-[1024px]:h-[680px]
+
+bg-white opacity-10 blur-[120px]
+" />
 
 <CinematicStream/>
 
 {/* ipad */}
 
 <motion.div
-
 style={{
   rotateX: 6,
   rotateY: 0,
@@ -102,8 +114,15 @@ style={{
 }}
 className="
 relative
-w-[560px]
-h-[400px]
+w-[320px]
+min-[400px]:w-[360px]
+min-[500px]:w-[420px]
+min-[640px]:w-[480px]
+min-[768px]:w-[520px]
+min-[1024px]:w-[560px]
+
+aspect-[4/3]
+
 rounded-[40px]
 bg-transparent
 p-[6px]

@@ -1,35 +1,58 @@
 "use client"
 
 import Link from "next/link"
-import HeroTablet from "@/components/landing/HeroTablet"
+import HeroGlobe from "@/components/ui/HeroGlobe"
+import { motion, useScroll, useTransform } from "framer-motion"
+import { useRef } from "react"
 
 export default function Hero(){
 
+  const ref = useRef(null)
+
+const { scrollYProgress } = useScroll({
+  target: ref,
+  offset: ["start end", "end start"]
+})
+
+const baseScale = useTransform(
+  scrollYProgress,
+  [0, 0.5, 1],
+  [1.0, 1.2, 1.35]
+)
+
+// 👇 multiplier حسب الشاشة
+const scale = useTransform(
+  scrollYProgress,
+  [0, 0.5, 1],
+  [1.0, 1.2, 1.35]
+)
+
 return(
 
-<section className="
-relative w-full
+<section
+  className="
+  relative w-full
 
-min-h-[calc(100vh-72px)]
-md:min-h-[calc(100vh-72px)]
+  min-h-[90vh] md:min-h-[calc(100vh-72px)]
 
-flex items-start md:items-center
-pt-16 sm:pt-20 md:pt-0
-pb-24 sm:pb-28 md:pb-0
+  flex items-start md:items-center
 
-px-5 sm:px-8 md:px-12 xl:px-28
+  pt-8 sm:pt-12 md:pt-0
+  pb-16 sm:pb-20 md:pb-0
 
-max-w-[1400px]
-mx-auto
+  px-5 sm:px-8 md:px-12 xl:px-28
 
-grid grid-cols-1 md:grid-cols-2
-gap-14 md:gap-16 lg:gap-20 xl:gap-24
+  max-w-[1400px]
+  mx-auto
 
-overflow-hidden
-bg-white
-max-h-[700px]:items-start
-max-h-[700px]:pt-12
-">
+  grid grid-cols-1 md:grid-cols-[1fr_1.1fr]
+
+  gap-10 md:gap-14 lg:gap-20 xl:gap-24
+
+  bg-white
+  "
+>
+
 
 {/* ===== BACKGROUND GLOW ===== */}
 <div className="absolute inset-0 pointer-events-none">
@@ -130,34 +153,35 @@ Start earning
 
 {/* ===== RIGHT (TABLET) ===== */}
 <div className="
-relative w-full flex justify-center md:justify-end
-
-mt-2 sm:mt-16 md:mt-0
-">
-
-<div className="
+relative
 w-full
+flex justify-center items-center
 
-max-w-[85%] sm:max-w-[420px] md:max-w-[520px] lg:max-w-full
-
-aspect-[4/3]
-
-flex items-center justify-center
-
-transition-all duration-500
-
-scale-[0.85]
-sm:scale-[0.9]
-md:scale-[1]
-
-max-h-[700px]:scale-[0.8]
-max-h-[650px]:scale-[0.75]
+h-[420px]
+sm:h-[520px]
+md:h-[580px]
+lg:h-[640px]
 ">
 
-<HeroTablet/>
+  <motion.div
+  ref={ref}
+  style={{ scale }}
+  className="
+  absolute
+  left-1/2 top-1/2
+  -translate-x-1/2 -translate-y-1/2
 
-</div>
-</div>
+  md:scale-[1.05]
+  lg:scale-[1.1]
+  xl:scale-[1.15]
+  "
+>
+  <HeroGlobe />
+</motion.div>
+
+  </div>
+
+
 
 </section>
 

@@ -194,24 +194,23 @@ Get Started
 
     
 
-        {/* ===== GRID ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-  <Link href="#features" onClick={() => setMobileOpen(false)}>
+  <Link href="/features" onClick={() => setMobileOpen(false)}>
     <MegaItem 
       title="Features" 
       desc="Explore powerful tools for creators" 
     />
   </Link>
 
-  <Link href="#creators" onClick={() => setMobileOpen(false)}>
+  <Link href="/creators" onClick={() => setMobileOpen(false)}>
     <MegaItem 
       title="Creators" 
       desc="Grow and monetize your audience" 
     />
   </Link>
 
-  <Link href="#brands" onClick={() => setMobileOpen(false)}>
+  <Link href="/brands" onClick={() => setMobileOpen(false)}>
     <MegaItem 
       title="Brands" 
       desc="Scale your partnerships globally" 
