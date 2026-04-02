@@ -16,9 +16,11 @@ import { Menu, X } from "lucide-react"
 export default function Topbar({
   onMenuClick,
   menuOpen,
+  setMenuOpen
 }: {
-  onMenuClick?: () => void
-  menuOpen?: boolean
+  onMenuClick: () => void
+  menuOpen: boolean
+  setMenuOpen: (v: boolean) => void
 }) {
 
   const router = useRouter();

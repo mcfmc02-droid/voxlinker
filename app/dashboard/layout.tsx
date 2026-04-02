@@ -20,6 +20,7 @@ export default function DashboardLayout({
         <Topbar
   onMenuClick={() => setMenuOpen(prev => !prev)}
   menuOpen={menuOpen}
+  setMenuOpen={setMenuOpen}
 />
       </div>
 
@@ -39,7 +40,7 @@ export default function DashboardLayout({
 
           {/* Drawer */}
           <div className="fixed top-0 left-0 h-full w-72 bg-white z-50 md:hidden shadow-xl overflow-y-auto">
-            <Sidebar />
+            <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
           </div>
         </>
       )}

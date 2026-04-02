@@ -184,7 +184,13 @@ export default function SettingsPage() {
 }
 
   return (
-    <div className="pt-1 pb-10 px-10 max-w-5xl mx-auto">
+    <div className="
+pt-4 pb-10
+
+px-4 sm:px-6 lg:px-10
+
+max-w-5xl mx-auto
+">
 
       <PageTitle>Account Settings</PageTitle>
       <PageSubtitle>
@@ -225,7 +231,7 @@ export default function SettingsPage() {
       {/* PROFILE TAB */}
       {tab === "profile" && (
         <>
-        <div className="bg-white rounded-2xl border border-gray-200 p-12">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-10 lg:p-12">
 
           <SectionTitle>
           <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl w-fit hover:bg-gray-100 transition">
@@ -234,82 +240,95 @@ export default function SettingsPage() {
     <User size={18} strokeWidth={2} />
   </div>
 
-  <div className="font-medium text-sm flex gap-1">
-    <span>{capitalize(user.firstName)}</span>
-    <span>{capitalize(user.lastName)}</span>
+  {/* ===== NAME HEADER ===== */}
+<div className="font-medium text-sm flex gap-1">
+  <span>{capitalize(user.firstName)}</span>
+  <span>{capitalize(user.lastName)}</span>
+</div>
+
+</div>
+</SectionTitle>
+
+{/* ===== FIRST + LAST (ROW RESPONSIVE) ===== */}
+<div className="
+flex flex-col
+md:flex-row
+gap-6 md:gap-10
+mb-10
+max-w-3xl
+mt-10
+">
+
+  {/* First Name */}
+  <div className="w-full md:flex-1 min-w-0">
+    <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+      First Name
+    </label>
+
+    <div className="relative">
+      <input
+        type="text"
+        value={firstName}
+        readOnly
+        className="
+        w-full mt-2 border-b border-gray-200 py-2 text-sm
+        text-gray-500 bg-transparent
+        focus:outline-none focus:border-[#ff9a6c]
+        cursor-not-allowed
+        pr-8
+        "
+      />
+
+      <Lock
+        size={16}
+        className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
+      />
+    </div>
+  </div>
+
+  {/* Last Name */}
+  <div className="w-full md:flex-1 min-w-0">
+    <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+      Last Name
+    </label>
+
+    <div className="relative">
+      <input
+        type="text"
+        value={lastName}
+        readOnly
+        className="
+        w-full mt-2 border-b border-gray-200 py-2 text-sm
+        text-gray-500 bg-transparent
+        focus:outline-none focus:border-[#ff9a6c]
+        cursor-not-allowed
+        pr-8
+        "
+      />
+
+      <Lock
+        size={16}
+        className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
+      />
+    </div>
   </div>
 
 </div>
-        </SectionTitle>
 
-          <div className="grid grid-cols-2 gap-10 mb-10 max-w-3xl mt-10">
+{/* ===== EMAIL (FULL WIDTH ALWAYS) ===== */}
+<div className="mb-10 max-w-3xl">
 
-            <div>
-  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-    First Name
-  </label>
-
-  <div className="relative">
-    <input
-      type="text"
-      value={firstName}
-      readOnly
-      className="
-      w-full mt-2 border-b border-gray-200 py-2 text-sm
-      text-gray-500 bg-transparent
-      focus:outline-none focus:border-[#ff9a6c]
-      cursor-not-allowed
-      pr-8
-      "
-    />
-
-    <Lock
-      size={16}
-      className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
-    />
-  </div>
-</div>
-
-<div>
-  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-    Last Name
-  </label>
-
-  <div className="relative">
-    <input
-      type="text"
-      value={lastName}
-      readOnly
-      className="
-      w-full mt-2 border-b border-gray-200 py-2 text-sm
-      text-gray-500 bg-transparent
-      focus:outline-none focus:border-[#ff9a6c]
-      cursor-not-allowed
-      pr-8
-      "
-    />
-
-    <Lock
-      size={16}
-      className="absolute right-0 top-1/2 -translate-y-1/2 text-black"
-    />
-  </div>
-</div>
-
-             {/* Email */}
-
-     <div className="col-span-2">
-
-     <FormLabel>
-        Email
-    </FormLabel>
+  <FormLabel>Email</FormLabel>
 
   <div className="relative mt-2">
     <input
       type="email"
       value={user.email}
       disabled
-      className="w-full border-b border-gray-200 py-2 text-sm text-gray-500 bg-transparent cursor-not-allowed pr-8"
+      className="
+      w-full border-b border-gray-200 py-2 text-sm
+      text-gray-500 bg-transparent cursor-not-allowed pr-8
+      "
     />
 
     <Lock
@@ -331,19 +350,14 @@ export default function SettingsPage() {
   </HelperText>
 
 </div>
-
-          </div>
-
-
-
-        </div>
+</div>
 
     
 
      
       {/* Public Profile Section */}
 
-<div className="bg-white rounded-2xl border border-gray-200 p-12 mt-12">
+<div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-10 lg:p-12 mt-12">
 
   <SectionTitle>
     Public Profile
@@ -469,11 +483,26 @@ export default function SettingsPage() {
 
   <button
   type="button"
-    onClick={handleProfileSave}
-    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md transition cursor-pointer"
-  >
-    Save Public Profile
-  </button>
+  onClick={handleProfileSave}
+  className="
+  px-6 py-3
+  rounded-xl
+
+  text-sm font-medium
+
+  bg-black text-white border border-black
+
+  transition-all duration-300
+
+  hover:bg-white hover:text-black hover:border-black
+
+  active:scale-[0.97]
+
+  cursor-pointer
+  "
+>
+  Save Public Profile
+</button>
 
 </div>
 
@@ -489,7 +518,7 @@ export default function SettingsPage() {
         <div className="space-y-10">
 
           {/* Password Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-10">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-10 lg:p-12">
 
             <SectionTitle>
               Change Password
@@ -516,17 +545,35 @@ export default function SettingsPage() {
             </div>
 
             <button
-            type="button"
-              onClick={handlePasswordChange}
-              className="mt-6 px-7 py-3 rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white text-sm font-medium hover:shadow-md cursor-pointer"
-            >
-              Update Password
-            </button>
+  type="button"
+  onClick={handlePasswordChange}
+  className="
+  mt-6
+
+  px-7 py-3
+  rounded-xl
+
+  text-sm font-medium
+
+  bg-black text-white border border-black
+
+  transition-all duration-300
+
+  hover:bg-white hover:text-black hover:border-black
+  hover:shadow-md
+
+  active:scale-[0.97]
+
+  cursor-pointer
+  "
+>
+  Update Password
+</button>
 
           </div>
 
           {/* Delete Account Section */}
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10">
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 sm:p-10 lg:p-12">
 
             <SectionTitle>
               Delete Account

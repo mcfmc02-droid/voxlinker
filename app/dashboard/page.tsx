@@ -116,7 +116,7 @@ export default function Dashboard() {
   }, [router, days, startDate, endDate, customMode])
 
   if (loading) {
-    return <div className="p-8">Loading...</div>
+    return <div className="p-8 text-gray-400">Loading dashboard...</div>
   }
 
   if (!stats) {
@@ -325,7 +325,7 @@ gap-2 sm:gap-3
       </div>
 
       {/* Chart Section */}
-      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-10 hover:shadow-lg transition">
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-10 hover:shadow-lg transition">
 
         <div className="flex items-center justify-between mb-6">
           <SectionTitle>
@@ -381,7 +381,7 @@ gap-2 sm:gap-3
       </div>
 
       {/* Top Retailers */}
-      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-10 hover:shadow-lg transition">
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-10 hover:shadow-lg transition">
         <SectionTitle>
           Your Top Retailers
         </SectionTitle>

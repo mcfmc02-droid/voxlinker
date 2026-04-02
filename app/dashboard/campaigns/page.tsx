@@ -49,11 +49,16 @@ setBudget("")
 }
  return(
 
-<div className="space-y-10">
+<div className="space-y-10 → space-y-8 sm:space-y-10">
 
 {/* Header */}
 
-<div className="flex items-center justify-between">
+<div className="
+flex flex-col sm:flex-row
+items-start sm:items-center
+justify-between
+gap-4
+">
 
 <div>
 
@@ -70,20 +75,18 @@ Manage your influencer marketing campaigns.
 <button
 onClick={()=>setOpen(true)}
 className="
-px-5 py-2.5
+w-full sm:w-auto
+
+px-5 py-3
+
 rounded-xl
 text-sm font-medium
 
-bg-black
-text-white
-
-border border-black
+bg-black text-white border border-black
 
 transition-all duration-300
 
-hover:bg-white
-hover:text-black
-hover:border-black
+hover:bg-white hover:text-black hover:border-black
 
 active:scale-[0.97]
 
@@ -102,7 +105,7 @@ Create Campaign
 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
 {campaigns.map((c:any)=>(
-  <div key={c.id} className="bg-white rounded-2xl p-6 shadow-sm">
+  <div key={c.id} className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
     
     <h3 className="font-medium">{c.name}</h3>
 
@@ -116,7 +119,24 @@ Create Campaign
 
     <button
       onClick={()=>router.push(`/dashboard/campaigns/${c.id}`)}
-      className="mt-4 bg-black text-white px-4 py-2 rounded-lg"
+      className="
+mt-4
+w-full sm:w-auto
+
+bg-black text-white
+
+px-4 py-2.5
+
+rounded-lg
+
+border border-black
+
+transition-all duration-200
+
+hover:bg-white hover:text-black
+
+cursor-pointer
+"
     >
       View Campaign
     </button>
@@ -128,9 +148,9 @@ Create Campaign
 
 {open && (
 
-<div className="fixed inset-0 bg-black/30 flex items-center justify-center">
+<div className="fixed inset-0 bg-black/30 flex items-center justify-center px-4">
 
-<div className="bg-white rounded-2xl p-8 w-[420px] space-y-4 shadow-xl">
+<div className="bg-white rounded-2xl p-8 w-[92%] sm:w-[420px] space-y-4 shadow-xl">
 
 <h2 className="text-lg font-semibold">
 Create Campaign
@@ -144,7 +164,7 @@ Create Campaign
     value={name}
     onChange={(e)=>setName(e.target.value)}
     className="
-    w-full h-11
+    w-full h-12
 
     px-4
     rounded-xl
@@ -171,7 +191,7 @@ Create Campaign
     value={budget}
     onChange={(e)=>setBudget(e.target.value)}
     className="
-    w-full h-11
+    w-full h-12
 
     px-4
     rounded-xl
@@ -193,7 +213,7 @@ Create Campaign
   />
 
   {/* ACTIONS */}
-  <div className="flex justify-end gap-3 pt-2">
+  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
 
     {/* CANCEL */}
     <button

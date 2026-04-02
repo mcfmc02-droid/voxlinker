@@ -33,21 +33,17 @@ return(
   className="
   relative w-full
 
-  min-h-[90vh] md:min-h-[calc(100vh-72px)]
+  py-2 sm:py-10 md:py-0 lg:py-0 /* 👈 نفس فلسفة showcase */
 
-  flex items-start md:items-center
+  px-5 sm:px-8 md:px-10 xl:px-20
 
-  pt-8 sm:pt-12 md:pt-0
-  pb-16 sm:pb-20 md:pb-0
+  max-w-7xl mx-auto
 
-  px-5 sm:px-8 md:px-12 xl:px-28
+  grid grid-cols-1 md:grid-cols-2
 
-  max-w-[1400px]
-  mx-auto
+  gap-10 md:gap-14 xl:gap-20
 
-  grid grid-cols-1 md:grid-cols-[1fr_1.1fr]
-
-  gap-10 md:gap-14 lg:gap-20 xl:gap-24
+  items-center
 
   bg-white
   "
@@ -80,9 +76,6 @@ relative z-10 max-w-xl
 text-center md:text-left
 mx-auto md:mx-0
 
-md:-translate-y-[20px] lg:-translate-y-[16px]
-
-md:-translate-x-[20px] lg:-translate-x-[30px]
 ">
 
 <h1 className="
@@ -157,10 +150,10 @@ relative
 w-full
 flex justify-center items-center
 
-h-[420px]
-sm:h-[520px]
-md:h-[580px]
-lg:h-[640px]
+h-[320px]
+sm:h-[480px]
+md:h-[520px]
+lg:h-[580px]
 ">
 
   <motion.div

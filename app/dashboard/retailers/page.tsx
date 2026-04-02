@@ -652,22 +652,44 @@ truncate
 
       {detailsOpen && selectedBrand && (
 
-<div className="fixed inset-0 z-50 flex">
-
-{/* Overlay */}
-
 <div
-className="flex-1 bg-black/30 backdrop-blur-sm"
-onClick={()=>setDetailsOpen(false)}
-/>
+  className="
+  fixed inset-0 z-50 flex
+  "
+>
 
-{/* Panel */}
+  {/* Overlay */}
+  <div
+    className="flex-1 bg-black/30 backdrop-blur-sm"
+    onClick={() => setDetailsOpen(false)}
+  />
 
-<div className="w-[460px] bg-white h-full shadow-2xl p-8 overflow-y-auto flex flex-col">
+  {/* Panel */}
+  <div
+    className="
+    bg-white shadow-2xl flex flex-col
 
-{/* Header */}
+    /* MOBILE */
+    fixed bottom-0 left-0 right-0
+    h-[85vh]
+    rounded-t-3xl
 
-<div className="flex justify-between items-center mb-6">
+    /* DESKTOP */
+    md:static
+    md:h-full
+    md:w-[460px]
+    md:rounded-none
+
+    p-6 sm:p-8
+    overflow-y-auto
+    "
+  >
+
+{/* ===== DRAG HANDLE (mobile only) ===== */}
+  <div className="w-10 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 md:hidden" />
+
+  {/* ===== HEADER ===== */}
+  <div className="flex justify-between items-center mb-4 sm:mb-6">
 
 <h2 className="text-lg font-semibold">
 {selectedBrand.name}
@@ -802,26 +824,68 @@ Description
 
 {/* Buttons */}
 
-<div className="mt-8 flex gap-3">
+<div className="
+mt-8
 
-<button
-onClick={()=>handleGenerateLink(selectedBrand.id)}
-className="flex-1 py-2.5 bg-black text-white rounded-lg text-sm hover:opacity-90 transition cursor-pointer hover:bg-gray-800"
-> 
-GetLink
-</button>
+flex flex-col sm:flex-row
+gap-3
+">
 
-{selectedBrand.websiteUrl && (
+  {/* PRIMARY */}
+  <button
+    onClick={()=>handleGenerateLink(selectedBrand.id)}
+    className="
+    w-full sm:flex-1
 
-<a
-href={selectedBrand.websiteUrl}
-target="_blank"
-className="flex-1 py-2.5 bg-[#ff9a6c] text-white rounded-lg text-sm text-center hover:opacity-90 transition cursor-pointer hover:bg-[#ffb38a]"
-> 
-Visit Website
-</a>
+    py-3
+    rounded-xl
 
-)}
+    text-sm font-medium
+
+    bg-black text-white border border-black
+
+    transition-all duration-300
+
+    hover:bg-white hover:text-black hover:border-black
+    hover:shadow-md
+
+    active:scale-[0.97]
+
+    cursor-pointer
+    "
+  >
+    Get Link
+  </button>
+
+  {/* SECONDARY */}
+  {selectedBrand.websiteUrl && (
+    <a
+      href={selectedBrand.websiteUrl}
+      target="_blank"
+      className="
+      w-full sm:flex-1
+
+      py-3
+      rounded-xl
+
+      text-sm font-medium
+      text-center
+
+      bg-white text-black border border-gray-300
+
+      transition-all duration-300
+
+      hover:bg-black hover:text-white hover:border-black
+      hover:shadow-md
+
+      active:scale-[0.97]
+
+      cursor-pointer
+      "
+    >
+      Visit Website
+    </a>
+  )}
 
 </div>
 

@@ -17,11 +17,16 @@ export default function CreatorsPage() {
 
   return (
 
-    <div className="space-y-10">
+    <div className="space-y-10 → space-y-8 sm:space-y-10">
 
       {/* Header */}
 
-      <div className="flex items-center justify-between">
+     <div className="
+flex flex-col sm:flex-row
+items-start sm:items-center
+justify-between
+gap-4
+">
 
         <div>
           <PageTitle>Creators</PageTitle>
@@ -32,20 +37,18 @@ export default function CreatorsPage() {
         </div>
 
         <button className="
-px-5 py-2.5
+w-full sm:w-auto
+
+px-5 py-3
+
 rounded-xl
 text-sm font-medium
 
-bg-black
-text-white
-
-border border-black
+bg-black text-white border border-black
 
 transition-all duration-300
 
-hover:bg-white
-hover:text-black
-hover:border-black
+hover:bg-white hover:text-black hover:border-black
 hover:shadow-md
 
 active:scale-[0.97]
@@ -60,11 +63,17 @@ cursor-pointer
 
       {/* Search & Filters Section */}
 
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4 flex-wrap">
+      <div className="
+bg-white border border-gray-200 rounded-2xl
+p-5 sm:p-6
+
+flex flex-col sm:flex-row
+gap-4
+">
 
         {/* Search */}
 
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative w-full sm:flex-1">
 
           <Search
             size={18}
@@ -81,7 +90,20 @@ cursor-pointer
 
         {/* Category Filter */}
 
-        <select className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none cursor-pointer">
+       <select className="
+w-full sm:w-auto
+
+px-4 py-3
+
+border border-gray-200
+rounded-xl
+
+text-sm text-gray-600
+
+focus:outline-none
+
+cursor-pointer
+">
 
           <option>All Categories</option>
           <option>Fashion</option>
@@ -92,7 +114,20 @@ cursor-pointer
 
         {/* Platform Filter */}
 
-        <select className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none cursor-pointer">
+        <select className="
+w-full sm:w-auto
+
+px-4 py-3
+
+border border-gray-200
+rounded-xl
+
+text-sm text-gray-600
+
+focus:outline-none
+
+cursor-pointer
+">
 
           <option>All Platforms</option>
           <option>Instagram</option>
@@ -106,7 +141,7 @@ cursor-pointer
 
       {/* Creators Grid */}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
 
         {creators.map((creator) => (
           <CreatorCard

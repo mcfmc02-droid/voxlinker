@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useAuth } from "@/app/context/AuthContext"
 import { Settings, LogOut, UserCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import {
   LayoutDashboard,
   Store,
@@ -18,7 +19,11 @@ import {
   UserPlus
 } from "lucide-react"
 
-export default function Sidebar({ isOpen }: { isOpen?: boolean }) {
+export default function Sidebar({ isOpen, setIsOpen }: { 
+  isOpen?: boolean
+  setIsOpen?: (v: boolean) => void
+}) {
+
   const pathname = usePathname()
 
   const menu = [
@@ -44,6 +49,19 @@ const handleLogout = async () => {
   })
   router.push("/login")
 }
+
+
+useEffect(() => {
+  if (isOpen) {
+    document.body.style.overflow = "hidden"
+  } else {
+    document.body.style.overflow = ""
+  }
+
+  return () => {
+    document.body.style.overflow = ""
+  }
+}, [isOpen])
 
   return (
     <aside className="w-64 h-full bg-white flex flex-col border-r border-gray-100">
@@ -81,11 +99,14 @@ const handleLogout = async () => {
   <div className="mt-4 flex gap-2">
 
     <button
-      onClick={() => router.push("/dashboard/settings")}
-      className="flex-1 text-xs py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
-    >
-      Settings
-    </button>
+  onClick={() => {
+    setIsOpen?.(false) // 👈 اغلاق sidebar
+    router.push("/dashboard/settings")
+  }}
+  className="flex-1 text-xs py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+>
+  Settings
+</button>
 
     <button
       onClick={handleLogout}
@@ -112,15 +133,16 @@ const handleLogout = async () => {
 
             return (
               <Link
-                key={item.label}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all
-                ${
-                  isActive
-                    ? "bg-orange-50 text-orange-600"
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              >
+  key={item.label}
+  href={item.href}
+  onClick={() => setIsOpen?.(false)} 
+  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all
+  ${
+    isActive
+      ? "bg-orange-50 text-orange-600"
+      : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+  }`}
+>
                 <Icon size={18} />
                 {item.label}
               </Link>

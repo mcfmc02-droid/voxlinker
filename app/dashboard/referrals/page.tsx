@@ -70,10 +70,10 @@ export default function ReferralRewardsPage() {
       </div>
 
       {/* Main Card */}
-      <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-10">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-10">
 
         {/* Stats */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 
           {[{
             title: "Total Referrals",
@@ -109,13 +109,13 @@ export default function ReferralRewardsPage() {
             Your referral link
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
 
             <input
               value={referralLink}
               readOnly
               className="
-              flex-1
+              flex-1 min-w-0
               bg-gray-50
               border border-gray-200
               px-4 py-3
@@ -126,37 +126,29 @@ export default function ReferralRewardsPage() {
             />
 
             <motion.button
-              onClick={copy}
-              whileTap={{ scale: 0.95 }}
-              className="
-flex items-center gap-2
-px-5 py-3
-rounded-xl
-text-sm font-medium
+    onClick={copy}
+    whileTap={{ scale: 0.95 }}
+    className="
+    flex items-center justify-center gap-2
+    px-5 py-3
+    rounded-xl
+    text-sm font-medium
 
-bg-black
-text-white
+    bg-black text-white border border-black
 
-border border-black
+    transition-all duration-300
 
-shadow-[0_6px_20px_rgba(0,0,0,0.15)]
+    hover:bg-white hover:text-black hover:border-black
 
-transition-all duration-300
+    active:scale-[0.97]
+    cursor-pointer
+    "
+  >
+    {copied ? <Check size={16} /> : <Copy size={16} />}
+    {copied ? "Copied" : "Copy"}
+  </motion.button>
 
-hover:bg-white
-hover:text-black
-hover:border-black
-
-active:scale-[0.97]
-
-cursor-pointer
-"
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? "Copied" : "Copy"}
-            </motion.button>
-
-          </div>
+</div>
 
         </div>
 
@@ -167,7 +159,7 @@ cursor-pointer
             Share your link
           </p>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
 
             <ShareButton icon={<Mail size={18} />} label="Email" onClick={shareEmail} />
             <ShareButton icon={<Facebook size={18} />} label="Facebook" onClick={shareFacebook} />
@@ -200,15 +192,24 @@ function ShareButton({
       onClick={onClick}
       className="
       flex items-center justify-center gap-2
+      w-full
+
       bg-gray-50
       border border-gray-200
-      py-3
+
+      py-3 px-3
+
       rounded-xl
       text-sm font-medium
 
+      transition-all duration-200
+
       hover:bg-white
       hover:shadow-sm
-      transition cursor-pointer
+
+      active:scale-[0.97]
+
+      cursor-pointer
       "
     >
       {icon}

@@ -89,7 +89,7 @@ export default function LinksPage() {
         <div className="space-y-4">
 
   {/* Sub Tracking */}
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
     <input
       placeholder="Sub1 (traffic source)"
@@ -122,7 +122,7 @@ export default function LinksPage() {
   </div>
 
   {/* URL + Button */}
-  <div className="flex gap-4">
+  <div className="flex flex-col sm:flex-row gap-4">
 
     <input
       type="text"
@@ -185,9 +185,11 @@ cursor-pointer
       </div>
 
       {/* Link Journal */}
-<div className="bg-white rounded-3xl p-8 shadow-sm space-y-6">
+<div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
 
-  <div className="flex items-center justify-between">
+  <div className="flex flex-col sm:flex-row
+sm:items-center sm:justify-between
+gap-4">
 
     <h2 className="text-xl font-medium">Link Journal</h2>
 
@@ -262,27 +264,47 @@ cursor-pointer
 </div>
           </div>
 
-          <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition">
+          <div className="flex gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
 
             <button
-              onClick={() => copyLink(fullLink, link.id)}
-              className="px-4 py-2 text-sm bg-black text-white rounded-lg hover:opacity-80 transition cursor-pointer"
-            >
-              {copiedId === link.id ? "Copied" : "Copy"}
-            </button>
+  onClick={() => copyLink(fullLink, link.id)}
+  className="
+  px-4 py-2 text-sm rounded-lg
 
-            <button
-              onClick={async () => {
-                await fetch(`/api/my-links/${link.id}`, {
-                  method: "DELETE"
-                })
+  bg-black text-white border border-black
 
-                setJournal(journal.filter((l) => l.id !== link.id))
-              }}
-              className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:opacity-80 transition cursor-pointer"
-            >
-              Delete
-            </button>
+  transition-all duration-200
+
+  hover:bg-white hover:text-black
+
+  cursor-pointer
+  "
+>
+  {copiedId === link.id ? "Copied" : "Copy"}
+</button>
+
+<button
+  onClick={async () => {
+    await fetch(`/api/my-links/${link.id}`, {
+      method: "DELETE"
+    })
+
+    setJournal(journal.filter((l) => l.id !== link.id))
+  }}
+  className="
+  px-4 py-2 text-sm rounded-lg
+
+  bg-white text-black border border-gray-300
+
+  transition-all duration-200
+
+  hover:bg-black hover:text-white hover:border-black
+
+  cursor-pointer
+  "
+>
+  Delete
+</button>
 
           </div>
 
