@@ -56,7 +56,7 @@ export default function Navbar() {
 
         {/* ===== LEFT (LOGO) ===== */}
         <Link href="/" className="flex items-center">
-          <img src="/logo.svg" className="h-9 md:h-10 w-auto cursor-pointer translate-y-[-2px]"/>
+          <img src="/logo.svg" className="h-8 sm:h-9 md:h-10 lg:h-11 xl:h-12 w-auto cursor-pointer"/>
         </Link>
 
         {/* ===== DESKTOP MENU ===== */}
@@ -113,7 +113,7 @@ export default function Navbar() {
 </div>
 
         {/* ===== RIGHT ===== */}
-        <div className="flex items-center gap-3 relative" ref={dropdownRef}>
+        <div className="flex items-center gap-2 sm:gap-3 relative" ref={dropdownRef}>
 
           {/* DESKTOP BUTTONS */}
           <div className="hidden lg:flex items-center gap-4">
@@ -154,6 +154,36 @@ Get Started
 </Link>
 
           </div>
+
+          {/* MOBILE LOGIN */}
+<Link
+  href="/login"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="lg:hidden"
+>
+  <button className="
+    flex items-center gap-2
+
+    px-3 py-2
+
+    rounded-lg
+
+    text-xs font-medium
+
+    border border-gray-200
+    text-gray-700
+
+    hover:bg-gray-100
+    hover:text-black
+
+    transition
+    cursor-pointer
+  ">
+    <Users size={16} />
+    Login
+  </button>
+</Link>
 
           {/* MOBILE MENU BUTTON (يبقى في اليمين) */}
           <button
@@ -227,35 +257,47 @@ Get Started
 </div>
 
         {/* Divider */}
-        <div className="my-6 border-t border-gray-100" />
+<div className="my-6 border-t border-gray-100" />
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
+{/* Buttons */}
+<div className="flex flex-col sm:flex-row gap-3">
 
-          <Link href="/login" className="w-full">
-            <button className="
-              w-full py-3 rounded-xl text-sm font-medium
-              border border-gray-200
-              hover:bg-gray-100
-              transition cursor-pointer
-            ">
-              Login
-            </button>
-          </Link>
+  {/* LOGIN */}
+  <Link
+    href="/login"
+    className="w-full"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <button className="
+      w-full py-3 rounded-xl text-sm font-medium
+      border border-gray-200
+      hover:bg-gray-100
+      transition cursor-pointer
+    ">
+      Login
+    </button>
+  </Link>
 
-          <Link href="/register" className="w-full">
-            <button className="
-              w-full py-3 rounded-xl text-sm font-semibold text-white
-              bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
-              shadow-md
-              hover:opacity-90
-              transition cursor-pointer
-            ">
-              Get Started
-            </button>
-          </Link>
+  {/* REGISTER */}
+  <Link
+    href="/register"
+    className="w-full"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <button className="
+      w-full py-3 rounded-xl text-sm font-semibold text-white
+      bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
+      shadow-md
+      hover:opacity-90
+      transition cursor-pointer
+    ">
+      Get Started
+    </button>
+  </Link>
 
-        </div>
+</div>
 
       </div>
     </div>
@@ -267,7 +309,7 @@ Get Started
       </div>
 
       {/* ===== SOFT 3D DIVIDER ===== */}
-<div className="relative w-full h-[10px]">
+<div className="relative w-full h-[0px]">
 
   {/* main line */}
   <div className="

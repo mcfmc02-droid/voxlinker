@@ -43,6 +43,9 @@ export default function PaymentsPage() {
 
   const [savingPaypal, setSavingPaypal] = useState(false)
   const [uploadingTax, setUploadingTax] = useState(false)
+  const [taxError, setTaxError] = useState<string | null>(null)
+  const [isEditingPaypal, setIsEditingPaypal] = useState(false)
+  const [paypalError, setPaypalError] = useState<string | null>(null)
 
 
   // ================= FETCH =================
@@ -81,6 +84,10 @@ export default function PaymentsPage() {
 
     const data = JSON.parse(text)
     setPaymentMethod(data.method)
+    if (data.method) {
+  setPaypalEmail(data.method.paypalEmail || "")
+  setAccountHolder(data.method.accountHolder || "")
+}
 
   } catch (err) {
     console.error("fetchPayment error:", err)
@@ -122,30 +129,52 @@ export default function PaymentsPage() {
 
   // ================= PAYPAL SAVE =================
   const savePaypal = async () => {
-    const res = await fetch("/api/payment-method", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ paypalEmail, accountHolder }),
-    })
 
-    const data = await res.json()
+  // تنظيف الأخطاء القديمة
+  setPaypalError(null)
 
-    if (res.ok) {
-      setPaymentMethod(data.method)
-    } else {
-      alert(data.error)
-    }
+  // validation قبل الإرسال (مهم 🔥)
+  if (!paypalEmail || !accountHolder) {
+    setPaypalError("Please fill all fields")
+    return
   }
+
+  setSavingPaypal(true)
+
+  const res = await fetch("/api/payment-method", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ paypalEmail, accountHolder }),
+  })
+
+  const data = await res.json()
+
+  if (res.ok) {
+    setPaymentMethod(data.method)
+  } else {
+    setPaypalError(data.error || "Something went wrong")
+  }
+
+  setSavingPaypal(false)
+}
 
 
   // ================= TAX UPLOAD =================
   const uploadTax = async () => {
-    if (!file || !formType || !country) {
-      alert("Fill all fields")
-      return
-    }
 
+  // تنظيف الأخطاء القديمة
+  setTaxError(null)
+
+  // validation (قبل الإرسال)
+  if (!file || !formType || !country) {
+    setTaxError("Please complete all required fields and upload a document")
+    return
+  }
+
+  setUploadingTax(true)
+
+  try {
     const formData = new FormData()
     formData.append("file", file)
     formData.append("formType", formType)
@@ -162,11 +191,22 @@ export default function PaymentsPage() {
     if (res.ok) {
       setTaxForm(data.tax)
       setShowTaxModal(false)
+
+      // reset inputs
+      setFile(null)
+      setFormType("")
+      setTaxId("")
+      setCountry("")
     } else {
-      alert(data.error)
+      setTaxError(data.error || "Failed to upload tax form")
     }
+
+  } catch (err) {
+    setTaxError("Network error. Please try again.")
   }
 
+  setUploadingTax(false)
+}
 
   // ================= WITHDRAW =================
   const handleWithdrawal = async () => {
@@ -303,13 +343,13 @@ gap-5
 
       {/* Payment Status */}
       <span className={`
-      text-xs px-2 py-1 rounded-full
-      ${paymentMethod?.status === "CONNECTED"
-        ? "bg-green-100 text-green-600"
-        : "bg-gray-100 text-gray-500"}
-      `}>
-        PayPal {paymentMethod?.status === "CONNECTED" ? "Connected" : "Not connected"}
-      </span>
+text-xs px-2 py-1 rounded-full
+${paymentMethod?.status === "ACTIVE"
+  ? "bg-green-100 text-green-600"
+  : "bg-gray-100 text-gray-500"}
+`}>
+  PayPal {paymentMethod?.status === "ACTIVE" ? "Connected" : "Not connected"}
+</span>
 
     </div>
 
@@ -322,7 +362,7 @@ gap-5
       onClick={() => setShowModal(true)}
       disabled={
         taxForm?.status !== "APPROVED" ||
-        paymentMethod?.status !== "CONNECTED"
+        paymentMethod?.status !== "ACTIVE"
       }
       className="
       px-6 py-3
@@ -499,9 +539,28 @@ gap-5
         </div>
       </label>
 
+{taxError && (
+  <div className="
+  mt-3
+
+  text-sm
+
+  text-red-600
+  bg-red-50
+  border border-red-200
+
+  px-4 py-2
+
+  rounded-lg
+  ">
+    {taxError}
+  </div>
+)}
+
       {/* BUTTON */}
       <button
         onClick={uploadTax}
+        disabled={uploadingTax}
         className="
         w-full mt-2
 
@@ -519,8 +578,8 @@ gap-5
         cursor-pointer
         "
       >
-        Submit Tax Form
-      </button>
+       {uploadingTax ? "Uploading..." : "Submit Tax Form"}
+       </button>
 
     </div>
   )}
@@ -588,12 +647,31 @@ gap-5
 
         </label>
 
+        {taxError && (
+  <div className="
+  mt-3
+
+  text-sm
+
+  text-red-600
+  bg-red-50
+  border border-red-200
+
+  px-4 py-2
+
+  rounded-lg
+  ">
+    {taxError}
+  </div>
+)}
+
         <button
           onClick={uploadTax}
+          disabled={uploadingTax}
           className="text-sm font-medium text-[#ff9a6c] hover:underline cursor-pointer"
         >
-          Re-upload
-        </button>
+          {uploadingTax ? "Uploading..." : "Re-upload"}
+         </button>
 
       </div>
 
@@ -615,7 +693,7 @@ gap-5
       Payment Method
     </SectionTitle>
 
-    {paymentMethod?.status === "CONNECTED" && (
+    {paymentMethod?.status === "ACTIVE" && (
       <span className="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full">
         Verified
       </span>
@@ -634,6 +712,7 @@ gap-5
       <input
         value={paypalEmail}
         onChange={(e) => setPaypalEmail(e.target.value)}
+        disabled={!isEditingPaypal && paymentMethod?.status === "ACTIVE"}
         placeholder="example@email.com"
         className="
         w-full mt-2
@@ -646,6 +725,9 @@ gap-5
 
         focus:ring-2 focus:ring-[#ff9a6c]/30
         focus:outline-none
+
+         disabled:opacity-60
+        disabled:cursor-not-allowed
         "
       />
 
@@ -663,6 +745,7 @@ gap-5
       <input
         value={accountHolder}
         onChange={(e) => setAccountHolder(e.target.value)}
+        disabled={!isEditingPaypal && paymentMethod?.status === "ACTIVE"}
         placeholder="Full name"
         className="
         w-full mt-2
@@ -675,8 +758,29 @@ gap-5
 
         focus:ring-2 focus:ring-[#ff9a6c]/30
         focus:outline-none
+
+        disabled:opacity-60
+        disabled:cursor-not-allowed
         "
       />
+
+      {paypalError && (
+  <div className="
+  mt-2
+
+  text-sm
+
+  text-red-600
+  bg-red-50
+  border border-red-200
+
+  px-4 py-2
+
+  rounded-lg
+  ">
+    {paypalError}
+  </div>
+)}
 
       <HelperText>
         Must match your PayPal account name
@@ -685,28 +789,76 @@ gap-5
 
     {/* BUTTON */}
     <button
-      onClick={savePaypal}
-      className="
-      w-full mt-2
+  onClick={() => {
+    if (paymentMethod && !isEditingPaypal) {
+      // فتح وضع التعديل
+      setIsEditingPaypal(true)
+      return
+    }
 
-      py-2.5 rounded-lg
-      text-sm font-medium
+    // حفظ
+    savePaypal()
+    setIsEditingPaypal(false)
+  }}
+  disabled={savingPaypal}
+  className="
+  w-full mt-2
 
-      bg-black text-white
+  py-2.5 rounded-lg
+  text-sm font-medium
 
-      transition-all duration-300
+  bg-black text-white
 
-      hover:bg-white
-      hover:text-black
-      hover:border hover:border-black
+  transition-all duration-300
 
-      active:scale-[0.98]
+  hover:bg-white
+  hover:text-black
+  hover:border hover:border-black
 
-      cursor-pointer
-      "
-    >
-      {paymentMethod ? "Update PayPal" : "Connect PayPal"}
-    </button>
+  active:scale-[0.98]
+
+  disabled:opacity-50
+  disabled:cursor-not-allowed
+
+  cursor-pointer
+  "
+>
+  {savingPaypal
+    ? "Saving..."
+    : paymentMethod
+      ? isEditingPaypal
+        ? "Save Changes"
+        : "Edit PayPal"
+      : "Connect PayPal"}
+</button>
+
+{isEditingPaypal && (
+  <button
+    onClick={() => {
+      setIsEditingPaypal(false)
+
+      // يرجع القيم الأصلية
+      setPaypalEmail(paymentMethod?.paypalEmail || "")
+      setAccountHolder(paymentMethod?.accountHolder || "")
+    }}
+    className="
+    w-full mt-2
+
+    py-2.5
+
+    text-sm font-medium
+
+    text-gray-500
+
+    hover:text-black
+
+    transition
+    cursor-pointer
+    "
+  >
+    Cancel
+  </button>
+)}
 
   </div>
 </div>

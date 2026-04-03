@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { PageTitle, PageSubtitle } from "@/components/ui/dashboard/Typography"
 import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
 
 import {
   ResponsiveContainer,
@@ -15,24 +16,76 @@ import {
   CartesianGrid
 } from "recharts"
 
+type Creator = {
+  id: number
+  name: string
+  email: string
+  clicks: number
+  conversions: number
+  revenue: number
+  epc?: number
+  handle?: string
+}
+
+type CampaignStatus = "ACTIVE" | "PAUSED" | "STOPPED"
+
 type Campaign = {
-  id:number
-  name:string
-  budget:number
-  creatorsCount:number
+  id: number
+  name: string
+  budget: number
+
+  status?: CampaignStatus
+
+  creators: Creator[]
+
+  stats?: {
+    clicks?: number
+    conversions?: number
+    revenue?: number
+    epc?: number
+  }
 }
 
 export default function CampaignPage(){
 
-const params = useParams()
-const id = params.id
-const router = useRouter()
+  const params = useParams()
+  const id = params.id
+  const router = useRouter()
 
-const [campaign,setCampaign] = useState<any>(null)
-const [loading,setLoading] = useState(true)
-const [open,setOpen] = useState(false)
-const [creators,setCreators] = useState([])
-const [selectedCreator,setSelectedCreator] = useState("")
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [creators, setCreators] = useState<any[]>([])
+  const [selectedCreator, setSelectedCreator] = useState("")
+
+  // ===== STATUS SYSTEM =====
+  const status = (campaign?.status || "ACTIVE") as CampaignStatus
+
+const statusStyles: Record<CampaignStatus, {
+  label: string
+  dot: string
+  class: string
+}> = {
+  ACTIVE: {
+    label: "Active",
+    dot: "bg-green-500",
+    class: "bg-green-50 text-green-700 border-green-200"
+  },
+  PAUSED: {
+    label: "Paused",
+    dot: "bg-yellow-500",
+    class: "bg-yellow-50 text-yellow-700 border-yellow-200"
+  },
+  STOPPED: {
+    label: "Stopped",
+    dot: "bg-red-500",
+    class: "bg-red-50 text-red-700 border-red-200"
+  },
+}
+
+const style = statusStyles[status]
+
+
 
 useEffect(()=>{
 
@@ -105,15 +158,60 @@ return(
 
 {/* Header */}
 
-<div>
+<div className="flex items-center justify-between gap-4">
 
-<PageTitle>
-{campaign.name}
-</PageTitle>
+  {/* LEFT */}
+  <div>
 
-<PageSubtitle>
-Campaign performance overview
-</PageSubtitle>
+    <PageTitle>
+      {campaign.name}
+    </PageTitle>
+
+    <PageSubtitle>
+      Campaign performance overview
+    </PageSubtitle>
+
+  </div>
+
+  {/* RIGHT - BACK BUTTON */}
+  <button
+  onClick={() => router.push("/dashboard/campaigns")}
+  className="
+  group
+  flex items-center gap-2
+
+  px-4 py-2
+
+  text-sm font-medium
+
+  rounded-lg
+
+  border border-gray-200
+  text-gray-600
+
+  bg-white
+
+  transition-all duration-200
+
+  hover:bg-gray-50
+  hover:text-black
+  hover:shadow-sm
+
+  active:scale-[0.96]
+
+  cursor-pointer
+  "
+>
+  <ArrowLeft
+    size={16}
+    className="
+    transition-transform
+    group-hover:-translate-x-0.5
+    "
+  />
+
+  <span>Back to campaigns</span>
+</button>
 
 </div>
 
@@ -157,7 +255,7 @@ EPC
 </div>
 
 <div className="text-xl font-semibold mt-2">
-${campaign.stats?.epc?.toFixed(2) ?? "0.00"}
+${(campaign?.stats?.epc ?? 0).toFixed(2)}
 </div>
 </div>
 
@@ -185,19 +283,39 @@ Creators
 </div>
 
 <div className="text-xl font-semibold mt-2">
-{campaign.creatorsCount}
+{campaign?.creators?.length ?? 0}
 </div>
 </div>
 
 
 <div className="bg-white rounded-2xl p-6 shadow-sm">
-<div className="text-sm text-gray-500">
-Status
-</div>
 
-<div className="text-xl font-semibold mt-2">
-Active
-</div>
+  <div className="text-sm text-gray-500">
+    Status
+  </div>
+
+  <div className="mt-3 flex items-center gap-2">
+
+    {/* DOT */}
+    <span className={`w-2 h-2 rounded-full ${style.dot}`} />
+
+    {/* BADGE */}
+    <span
+      className={`
+      text-xs font-medium
+
+      px-2.5 py-1
+      rounded-full
+      border
+
+      ${style.class}
+      `}
+    >
+      {style.label}
+    </span>
+
+  </div>
+
 </div>
 
 </div>
@@ -333,143 +451,293 @@ radius={[6,6,0,0]}
 {/* Creators Section */}
 
 
-<div className="bg-white rounded-2xl p-8 shadow-sm">
+<div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
 
-<div className="flex items-center justify-between mb-4">
+  {/* HEADER */}
+  <div className="flex items-center justify-between mb-6">
 
-<h2 className="text-lg font-medium">
-Creators in this campaign
-</h2>
+    <h2 className="text-lg font-medium">
+      Creators in this campaign
+    </h2>
 
-<button
-onClick={()=>setOpen(true)}
-className="px-4 py-2 bg-black text-white rounded-lg text-sm"
-> 
-AddCreator
-</button>
+    <button
+      onClick={()=>setOpen(true)}
+      className="
+      px-4 py-2
 
-</div>
+      rounded-lg
+      text-sm font-medium
 
-{campaign.creators.length === 0 ? (
+      bg-black text-white border border-black
 
-<div className="text-gray-500 text-sm">
-No creators added yet
-</div>
+      transition-all duration-300
 
-) : (
+      hover:bg-white hover:text-black
+      hover:shadow-md
 
-<div className="space-y-3">
+      active:scale-[0.97]
 
-{campaign.creators.map((creator:any)=>(
+      cursor-pointer
+      "
+    > 
+      Add Creator
+    </button>
 
-  
-<div
-key={creator.id}
-className="flex items-center justify-between border rounded-xl px-4 py-3"
->
+  </div>
 
-<div>
+  {/* EMPTY */}
+  {campaign.creators.length === 0 ? (
 
-<div className="font-medium">
-{creator.name}
-</div>
+    <div className="text-gray-500 text-sm">
+      No creators added yet
+    </div>
 
-<div className="text-sm text-gray-500">
-{creator.email}
-</div>
+  ) : (
 
-</div>
+    <div className="space-y-3">
 
-<div className="text-sm text-gray-600 flex gap-6">
+      {campaign.creators.map((creator:any)=>(
 
-<span>
-Clicks: {creator.clicks}
-</span>
+        <div
+          key={creator.id}
+          className="
+          group
+          flex flex-col sm:flex-row
+          sm:items-center sm:justify-between
 
-<span>
-Conversions: {creator.conversions}
-</span>
+          gap-4
 
-<span>
-Revenue: ${creator.revenue}
-</span>
+          border border-gray-200
+          rounded-xl
 
-<span>
-EPC: ${creator.epc?.toFixed(2) ?? 0}
-</span>
+          px-4 py-4
 
-</div>
+          bg-white
 
-<button
-onClick={()=>removeCreator(creator.id)}
-className="text-sm text-red-500 hover:text-red-700"
-> 
-Remove
-</button>
+          hover:shadow-md
+          hover:border-gray-300
 
-<button
-onClick={()=>navigator.clipboard.writeText(
-`${process.env.NEXT_PUBLIC_APP_URL}/r/${creator.handle ?? creator.id}/${campaign.id}`
-)}
-className="text-sm text-gray-500 hover:text-black"
-> 
-CopyLink
-</button>
+          transition-all duration-200
+          "
+        >
 
-</div>
+          {/* LEFT */}
+          <div>
+            <div className="font-medium text-gray-900">
+              {creator.name}
+            </div>
 
-))}
+            <div className="text-sm text-gray-500">
+              {creator.email}
+            </div>
+          </div>
 
-</div>
+          {/* STATS */}
+          <div className="
+          flex flex-wrap
+          gap-4 sm:gap-6
 
-)}
+          text-xs sm:text-sm text-gray-500
+          ">
+
+            <span>Clicks: {creator.clicks}</span>
+            <span>Conversions: {creator.conversions}</span>
+            <span>Revenue: ${creator.revenue}</span>
+            <span>EPC: ${creator.epc?.toFixed(2) ?? 0}</span>
+
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex gap-2 sm:gap-3">
+
+            {/* COPY */}
+            <button
+              onClick={()=>navigator.clipboard.writeText(
+                `${process.env.NEXT_PUBLIC_APP_URL}/r/${creator.handle ?? creator.id}/${campaign.id}`
+              )}
+              className="
+              px-3 py-1.5
+
+              text-xs font-medium
+
+              rounded-md
+
+              border border-gray-200
+              text-gray-600
+
+              transition-all
+
+              hover:bg-gray-100
+              hover:text-black
+
+              cursor-pointer
+              "
+            >
+              Copy
+            </button>
+
+            {/* REMOVE */}
+            <button
+              onClick={()=>removeCreator(creator.id)}
+              className="
+              px-3 py-1.5
+
+              text-xs font-medium
+
+              rounded-md
+
+              border border-red-200
+              text-red-500
+
+              transition-all
+
+              hover:bg-red-50
+              hover:text-red-600
+
+              cursor-pointer
+              "
+            >
+              Remove
+            </button>
+
+          </div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  )}
 
 </div>
 
 {open && (
 
-<div className="fixed inset-0 bg-black/30 flex items-center justify-center">
+<div
+  className="
+  fixed inset-0
 
-<div className="bg-white rounded-2xl p-8 w-[420px] space-y-4">
+  bg-black/40 backdrop-blur-sm
 
-<h2 className="text-lg font-semibold">
-Add Creator
-</h2>
+  flex items-center justify-center
 
-<select
-value={selectedCreator}
-onChange={(e)=>setSelectedCreator(e.target.value)}
-className="w-full border rounded-lg px-3 py-2"
+  px-4
+
+  z-50
+  "
+  onClick={() => setOpen(false)}
 >
 
-<option value="">
-Select creator
-</option>
+  <div
+    onClick={(e)=>e.stopPropagation()}
+    className="
+    bg-white
 
-{creators.map((c:any)=>(
-<option key={c.id} value={c.id}>
-{c.name}
-</option>
-))}
+    rounded-2xl
 
-</select>
+    w-[92%] sm:w-[420px]
 
-<div className="flex justify-end gap-3">
+    p-6 sm:p-8
 
-<button onClick={()=>setOpen(false)}>
-Cancel
-</button>
+    space-y-5
 
-<button
-onClick={addCreator}
-className="bg-black text-white px-4 py-2 rounded-lg"
-> 
-Add
-</button>
+    shadow-2xl
 
-</div>
+    animate-in fade-in zoom-in-95
+    "
+  >
 
-</div>
+    <h2 className="text-lg font-semibold">
+      Add Creator
+    </h2>
+
+    {/* SELECT */}
+    <select
+      value={selectedCreator}
+      onChange={(e)=>setSelectedCreator(e.target.value)}
+      className="
+      w-full
+
+      border border-gray-200
+      rounded-xl
+
+      px-4 py-2.5
+
+      text-sm
+
+      outline-none
+
+      focus:border-black
+      focus:ring-2 focus:ring-black/5
+
+      cursor-pointer
+      "
+    >
+
+      <option value="">Select creator</option>
+
+      {creators.map((c:any)=>(
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+
+    </select>
+
+    {/* ACTIONS */}
+    <div className="flex flex-col sm:flex-row justify-end gap-3">
+
+      {/* CANCEL */}
+      <button
+        onClick={()=>setOpen(false)}
+        className="
+        px-5 py-2.5
+
+        text-sm font-medium
+
+        rounded-xl
+
+        border border-gray-200
+        text-gray-600
+
+        hover:bg-gray-100
+
+        transition
+
+        cursor-pointer
+        "
+      >
+        Cancel
+      </button>
+
+      {/* ADD */}
+      <button
+        onClick={addCreator}
+        className="
+        px-6 py-2.5
+
+        text-sm font-medium
+
+        rounded-xl
+
+        bg-black text-white border border-black
+
+        transition-all duration-300
+
+        hover:bg-white hover:text-black
+
+        active:scale-[0.97]
+
+        cursor-pointer
+        "
+      > 
+        Add Creator
+      </button>
+
+    </div>
+
+  </div>
 
 </div>
 

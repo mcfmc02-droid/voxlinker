@@ -58,6 +58,15 @@ export default function Topbar({
     };
   }, []);
 
+  const formatName = (name?: string) => {
+  if (!name) return ""
+  return name
+    .toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
+
   const handleLogout = async () => {
     await fetch("/api/logout", {
       method: "POST",
@@ -78,13 +87,13 @@ export default function Topbar({
 
       {/* Logo */}
       <div
-        onClick={() => router.push("/dashboard")}
-        className="cursor-pointer flex items-center"
-      >
+  onClick={() => router.push("/dashboard")}
+  className="cursor-pointer flex items-center hover:opacity-90 transition "
+>
         <img
           src="/logo.svg"
           alt="VoxLinker"
-          className="h-9 md:h-7 w-auto scale-[1.3] origin-left"
+          className="h-8 sm:h-9 md:h-10 lg:h-11 w-auto object-contain transition hover:opacity-80"
         />
       </div>
 
@@ -205,83 +214,128 @@ export default function Topbar({
           </div>
 
           {open && (
-            <div className="absolute right-0 mt-3 w-75 bg-white shadow-xl rounded-xl border border-gray-100 overflow-hidden">
+  <div className="
+    absolute right-0 mt-3 w-[260px]
 
-              {/* User Info */}
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">
-                  {user ? `${user.firstName} ${user.lastName}` : "Creator"}
-                </p>
+    bg-white/95 backdrop-blur-md
 
-                <p className="text-xs text-gray-500 break-all leading-relaxed">
-                  {user?.email || "creator@email.com"}
-                </p>
-              </div>
+    border border-gray-100
+    rounded-2xl
 
-              {/* Menu */}
-              <div className="py-3">
+    shadow-[0_20px_60px_rgba(0,0,0,0.12)]
 
-                <button
-                  onClick={() => router.push("/dashboard/settings")}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2 text-gray-700 cursor-pointer transition"
-                >
-                  <Settings size={16} />
-                  Settings
-                </button>
+    p-2
 
-                <button
-                  onClick={() => router.push("/dashboard/extensions")}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2 text-gray-700 cursor-pointer transition"
-                >
-                  <Puzzle size={16} />
-                  Extensions
-                </button>
+    animate-in fade-in zoom-in-95
+  ">
 
-              </div>
-              
-              {/* learning Hub */}
+    {/* USER */}
+    <div className="px-4 py-3">
 
-              <div className="border-t border-gray-100" />
+      <p className="text-sm font-medium text-gray-900">
+        {user ? (
+          `${formatName(user.firstName)} ${formatName(user.lastName)}`
+        ) : (
+          <span className="block h-3 w-24 bg-gray-200 rounded animate-pulse" />
+        )}
+      </p>
 
-<button
-  className="
-  w-full
-  flex items-center gap-2
+      <p className="text-xs text-gray-500 mt-1 break-all">
+        {user ? (
+          user.email
+        ) : (
+          <span className="block h-3 w-32 bg-gray-200 rounded animate-pulse" />
+        )}
+      </p>
 
-  px-3 py-2.5
-  rounded-lg
+    </div>
 
-  text-sm font-medium
-  text-orange-600
+    {/* DIVIDER */}
+    <div className="my-2 h-px bg-gray-100" />
 
-  hover:bg-orange-50
+    {/* ITEMS */}
+    <div className="flex flex-col">
 
-  transition
-  cursor-pointer
-  "
->
-  <span className="text-base">🎓</span>
-  Learning Hub
-</button>
-             
+      <DropdownItem
+        icon={<Settings size={16} />}
+        label="Settings"
+        onClick={() => router.push("/dashboard/settings")}
+      />
 
-              {/* Divider */}
-              <div className="border-t border-gray-100" />
+      <DropdownItem
+        icon={<Puzzle size={16} />}
+        label="Extensions"
+        onClick={() => router.push("/dashboard/extensions")}
+      />
 
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm flex items-center gap-2 cursor-pointer transition"
-              >
-                <LogOut size={16} />
-                Sign Out
-              </button>
-             </div>
-            
-          )}
+      <DropdownItem
+        icon={<span>🎓</span>}
+        label="Learning Hub"
+        onClick={() => {}}
+      />
+
+    </div>
+
+    {/* DIVIDER */}
+    <div className="my-2 h-px bg-gray-100" />
+
+    {/* LOGOUT */}
+    <button
+      onClick={handleLogout}
+      className="
+        flex items-center gap-2
+
+        w-full px-4 py-2.5
+
+        text-sm font-medium
+
+        text-red-500
+
+        rounded-lg
+
+        hover:bg-red-50
+
+        transition
+        cursor-pointer
+      "
+    >
+      <LogOut size={16} />
+      Sign Out
+    </button>
+
+  </div>
+)}
         </div>
 </div>
       </div>
     </header>
   );
+}
+
+function DropdownItem({ icon, label, onClick }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className="
+        flex items-center gap-2
+
+        w-full px-4 py-2.5
+
+        text-sm font-medium
+
+        text-gray-600
+
+        rounded-lg
+
+        hover:bg-gray-100
+        hover:text-black
+
+        transition
+        cursor-pointer
+      "
+    >
+      {icon}
+      {label}
+    </button>
+  )
 }

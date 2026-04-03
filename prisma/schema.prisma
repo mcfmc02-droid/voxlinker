@@ -605,6 +605,7 @@ model Campaign {
   id        Int      @id @default(autoincrement())
   name      String
   budget    Float
+  status    String   @default("ACTIVE")
   startDate DateTime?
   endDate   DateTime?
   createdAt DateTime @default(now())

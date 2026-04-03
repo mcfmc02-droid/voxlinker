@@ -48,14 +48,14 @@ export async function POST(req: Request) {
       update: {
         paypalEmail,
         accountHolder,
-        status: "PENDING",
+        status: "ACTIVE",
         type: "PAYPAL",
       },
       create: {
         userId: user.id,
         paypalEmail,
         accountHolder,
-        status: "PENDING",
+        status: "ACTIVE",
         type: "PAYPAL",
       },
     })

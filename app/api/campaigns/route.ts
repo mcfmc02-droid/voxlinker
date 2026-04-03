@@ -18,11 +18,27 @@ export async function GET() {
   })
 
   const formatted = campaigns.map((c) => ({
-    id: c.id,
-    name: c.name,
-    budget: c.budget,
-    creatorsCount: c.creators.length
-  }))
+  id: c.id,
+  name: c.name,
+  budget: c.budget,
+
+  status: c.status || "ACTIVE",
+
+  creators: c.creators.map((cr) => ({
+    id: cr.creator.id,
+    name: cr.creator.name,
+    email: cr.creator.email,
+  })),
+
+  stats: {
+    clicks: 0,
+    conversions: 0,
+    revenue: 0,
+    epc: 0,
+  }
+}))
+
+
 
   return NextResponse.json({
     campaigns: formatted
@@ -46,6 +62,7 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -73,4 +90,6 @@ export async function POST(req: Request) {
 
   }
 
+
 }
+

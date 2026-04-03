@@ -96,6 +96,7 @@ export async function GET(
       id: campaign.id,
       name: campaign.name,
       budget: campaign.budget,
+      status: campaign.status, // ✅ أضف هذا
 
       stats: {
         clicks: totalClicks,
@@ -108,4 +109,57 @@ export async function GET(
     }
   })
 
+}
+
+// ===== DELETE CAMPAIGN =====
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params
+    const campaignId = Number(id)
+
+    await prisma.campaign.delete({
+      where: { id: campaignId }
+    })
+
+    return NextResponse.json({ success: true })
+
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json(
+      { error: "Failed to delete campaign" },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ===== UPDATE STATUS =====
+export async function PATCH(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params
+    const campaignId = Number(id)
+
+    const body = await req.json()
+    const { status } = body
+
+    const updated = await prisma.campaign.update({
+      where: { id: campaignId },
+      data: { status }
+    })
+
+    return NextResponse.json({ campaign: updated })
+
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json(
+      { error: "Failed to update campaign" },
+      { status: 500 }
+    )
+  }
 }
