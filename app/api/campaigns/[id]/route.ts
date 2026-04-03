@@ -145,8 +145,25 @@ export async function PATCH(
     const { id } = await context.params
     const campaignId = Number(id)
 
+    if (!campaignId) {
+      return NextResponse.json(
+        { error: "Invalid campaign ID" },
+        { status: 400 }
+      )
+    }
+
     const body = await req.json()
     const { status } = body
+
+    // ✅ validation احترافي
+    const allowedStatuses = ["ACTIVE", "PAUSED", "DRAFT"]
+
+    if (!allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: "Invalid status value" },
+        { status: 400 }
+      )
+    }
 
     const updated = await prisma.campaign.update({
       where: { id: campaignId },
@@ -156,7 +173,8 @@ export async function PATCH(
     return NextResponse.json({ campaign: updated })
 
   } catch (error) {
-    console.error(error)
+    console.error("PATCH CAMPAIGN ERROR:", error)
+
     return NextResponse.json(
       { error: "Failed to update campaign" },
       { status: 500 }
