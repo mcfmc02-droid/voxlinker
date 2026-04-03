@@ -33,7 +33,7 @@ return(
   className="
   relative w-full
 
-  py-2 sm:py-10 md:py-0 lg:py-0 /* 👈 نفس فلسفة showcase */
+  pt-15 sm:pt-10 md:pt-0 lg:pt-0
 
   px-5 sm:px-8 md:px-10 xl:px-20
 
@@ -79,9 +79,7 @@ mx-auto md:mx-0
 ">
 
 <h1 className="
-text-[26px] sm:text-[32px] md:text-[42px] lg:text-[50px]
-
-leading-[1.3]
+text-[28px] sm:text-[34px] md:text-[42px] lg:text-[50px] font-semibold leading-[1.3]
 mb-5 md:mb-6
 ">
 
