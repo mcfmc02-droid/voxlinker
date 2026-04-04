@@ -57,18 +57,18 @@ const points = {
 US: { x: 160, y: 130 },
 BR: { x: 300, y: 340 },
 EU: { x: 480, y: 110 },
-NG: { x: 500, y: 260 },
+NG: { x: 500, y: 240 },
 UAE: { x: 620, y: 220 },
 IN: { x: 850, y: 380 },
 }
 
 const offsets = {
-  US: { x: -90, y: -120 },
-  EU: { x: -80, y: -110 },
+  US: { x: -90, y: -100 },
+  EU: { x: -80, y: -100 },
   UAE: { x: -70, y: -105 },
-  IN: { x: -85, y: -115 },
-  BR: { x: -80, y: -105 },
-  NG: { x: -75, y: -110 },
+  IN: { x: -85, y: -100 },
+  BR: { x: -100, y: -110 },
+  NG: { x: -75, y: -100 },
 }
 
 const links = [
@@ -115,6 +115,9 @@ share: "20%"
 const isMobile =
   typeof window !== "undefined" && window.innerWidth < 768
 
+  const isZoomed =
+  typeof window !== "undefined" && window.devicePixelRatio > 2
+
 return (
 <div className="relative flex justify-center items-center">
 
@@ -139,6 +142,7 @@ return (
 
     {/* ===== GRID (Globe Effect) ===== */}
 
+{!isZoomed && (
 <div
   className="absolute inset-0"
   style={{
@@ -177,7 +181,11 @@ transform: "scaleY(0.9)"
 />
 ))}
 
-</div>  {/* ===== MAP SVG ===== */}  
+</div>
+)}
+
+
+  {/* ===== MAP SVG ===== */}  
     <svg
   viewBox="0 0 1000 500"
   className="absolute inset-0 w-full h-full pointer-events-auto"
@@ -205,34 +213,9 @@ delay={i * 0.2}
 />
 ))}
 
-{/* ===== NODES ===== */}
 
-{Object.entries(points).map(([key, p], i) => (
-<g
-key={key}
-onMouseEnter={() => setActive(key)}
-onMouseLeave={() => setActive(null)}
-style={{ cursor: "pointer" }}
 
-> 
-
-<motion.circle  
-  cx={p.x}  
-  cy={p.y}  
-  r="4"  
-  fill="#ff9a6c"  
-  animate={{  
-    scale: active === key ? 1.8 : [1, 1.5, 1],  
-    opacity: active === key ? 1 : [0.7, 1, 0.7]  
-  }}  
-  transition={{  
-    duration: 2,  
-    repeat: active === key ? 0 : Infinity  
-  }}  
-/>
-
-  </g>  
-))}  {/* ===== AUTO CARDS (CINEMATIC) ===== */}
+{/* ===== AUTO CARDS (CINEMATIC) ===== */}
 
 {Object.entries(points).map(([key, p], i) => {
 
@@ -247,6 +230,7 @@ y={p.y + offset.y}
 width="150"
 height="200"
 style={{ pointerEvents: "none" }}
+
 > 
 <motion.div
 initial={{ opacity: 0, scale: 0.7, y: 10 }}
@@ -272,7 +256,7 @@ ease: "easeOut"
 : {
 duration: 4.5,
 delay: i * 0.8,
-repeat: Infinity, // 👈 الحل هنا
+repeat: active === key ? 0 : Infinity, // 👈 الحل هنا
 repeatDelay: 2,
 ease: "easeInOut"
 }
@@ -300,11 +284,51 @@ text-xs border border-gray-100
     {d.share}  
   </span>{" "}  
   revenue share  
-</div>  </motion.div>  
+</div>
+
+  </motion.div>  
 </foreignObject>
 
 )
 })}
+
+{/* ===== NODES ===== */}
+
+{Object.entries(points).map(([key, p], i) => (
+<g
+key={key}
+onMouseEnter={() => setActive(key)}
+onMouseLeave={() => setActive(null)}
+style={{ cursor: "pointer", pointerEvents: "all" }}
+
+> 
+
+{/* 🔥 HIT AREA (غير مرئية) */}
+    <circle
+      cx={p.x}
+      cy={p.y}
+      r="18"
+      fill="transparent"
+    />
+
+<motion.circle  
+  cx={p.x}  
+  cy={p.y}  
+  r="4"  
+  fill="#ff9a6c"  
+  animate={{  
+    scale: active === key ? 1.8 : [1, 1.5, 1],  
+    opacity: active === key ? 1 : [0.7, 1, 0.7]  
+  }}  
+  transition={{  
+    duration: 2,  
+    repeat: active === key ? 0 : Infinity  
+  }}  
+/>
+</g>  
+
+
+))}  
 
 </svg>  
 

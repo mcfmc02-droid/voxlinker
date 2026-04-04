@@ -33,7 +33,7 @@ return(
   className="
   relative w-full
 
-  pt-15 sm:pt-10 md:pt-0 lg:pt-0
+  pt-14 sm:pt-10 md:pt-10 lg:pt-10 xl:pt-14 lg:mt-4 xl:mt-18
 
   px-5 sm:px-8 md:px-10 xl:px-20
 
@@ -41,7 +41,7 @@ return(
 
   grid grid-cols-1 md:grid-cols-2
 
-  gap-10 md:gap-14 xl:gap-20
+  gap-12 md:gap-16 xl:gap-24
 
   items-center
 
@@ -142,16 +142,14 @@ Start earning
 
 </div>
 
-{/* ===== RIGHT (TABLET) ===== */}
+{/* ===== RIGHT (GLOBE) ===== */}
 <div className="
 relative
 w-full
-flex justify-center items-center
+flex justify-center items-Start
 
-h-[320px]
-sm:h-[480px]
-md:h-[520px]
-lg:h-[580px]
+min-h-[150px] md:min-h-[150px]
+flex items-center
 ">
 
   <motion.div

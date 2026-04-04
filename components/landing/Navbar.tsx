@@ -52,7 +52,7 @@ export default function Navbar() {
 }
     `}>
 
-      <div className="w-full px-4 md:px-10 py-4 flex items-center justify-between relative">
+      <div className="w-full px-4 md:px-10 py-2 flex items-center justify-between relative">
 
         {/* ===== LEFT (LOGO) ===== */}
         <Link href="/" className="flex items-center">
@@ -309,7 +309,7 @@ Get Started
       </div>
 
       {/* ===== SOFT 3D DIVIDER ===== */}
-<div className="relative w-full h-[0px]">
+<div className="relative w-full h-[1px]">
 
   {/* main line */}
   <div className="

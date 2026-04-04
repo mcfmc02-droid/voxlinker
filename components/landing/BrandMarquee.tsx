@@ -92,11 +92,8 @@ export default function BrandMarquee() {
 
       {/* HEADER */}
 
-      <div className="max-w-7xl mx-auto text-center mb-20 px-6">
+      <div className="max-w-7xl mx-auto text-center mb-14 md:mb-18 px-6">
 
-        <p className="text-sm uppercase tracking-wider text-gray-400 mb-3">
-          Trusted brand ecosystem
-        </p>
 
         <h2 className="text-3xl md:text-4xl font-semibold mb-4">
           Promote products from thousands of global brands
