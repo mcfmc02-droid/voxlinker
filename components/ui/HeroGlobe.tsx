@@ -112,15 +112,24 @@ share: "20%"
 }
 }
 
+const isMobile =
+  typeof window !== "undefined" && window.innerWidth < 768
+
 return (
 <div className="relative flex justify-center items-center">
 
-<motion.div  
-    style={{  
-      rotateX: 12,  
-      rotateY: -10,  
-      transformPerspective: 1200  
-    }}  
+<motion.div
+  style={{
+    rotateX: isMobile ? 0 : 12,
+    rotateY: isMobile ? 0 : -10,
+    transformPerspective: 1200,
+
+    /* 🔥 تثبيت GPU */
+    transformStyle: "preserve-3d",
+    willChange: "transform",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+  }}
     className="  
     relative  
     w-[300px] sm:w-[380px] md:w-[460px] lg:w-[540px]  
@@ -130,10 +139,10 @@ return (
 
     {/* ===== GRID (Globe Effect) ===== */}
 
-<div  
-  className="absolute inset-0"  
-  style={{  
-    transform: "perspective(900px) rotateX(40deg) scaleY(1.2) scaleX(0.95)",  
+<div
+  className="absolute inset-0"
+  style={{
+    transform: "perspective(900px) rotateX(40deg) scaleY(1.2) scaleX(0.95) translateZ(0)",  
     transformOrigin: "center",  /* ✨ هذا هو السحر */  
 WebkitMaskImage:  
   "radial-gradient(ellipse at center, black 55%, transparent 100%)",  
@@ -170,11 +179,12 @@ transform: "scaleY(0.9)"
 
 </div>  {/* ===== MAP SVG ===== */}  
     <svg
-
-viewBox="0 0 1000 500"
-className="absolute inset-0 w-full h-full pointer-events-auto"
-
-> 
+  viewBox="0 0 1000 500"
+  className="absolute inset-0 w-full h-full pointer-events-auto"
+  style={{
+    transform: "translateZ(0)"
+  }}
+>
 
 {/* map */}  
       <image  

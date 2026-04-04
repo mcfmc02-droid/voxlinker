@@ -89,7 +89,7 @@ export default function CookieBanner() {
                 border border-gray-200
                 text-gray-600
                 hover:bg-gray-50
-                transition
+                transition cursor-pointer
               "
             >
               Reject All
@@ -106,7 +106,7 @@ export default function CookieBanner() {
                 bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
                 shadow-md
                 hover:scale-[1.05]
-                transition
+                transition cursor-pointer
               "
             >
               Accept All
@@ -123,7 +123,7 @@ export default function CookieBanner() {
               underline
               hover:text-gray-600
               transition
-              self-start
+              self-start cursor-pointer
             "
           >
             Customize preferences
