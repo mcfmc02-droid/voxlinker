@@ -96,18 +96,26 @@ shadow-xl
 ">
 
           {/* Logo */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-8 sm:mb-10">
             <div className="text-3xl font-semibold tracking-tight">
                {/* ================= LOGO ================= */}
 
 <div className="flex justify-center">
-  <Link href="/" className="flex items-center justify-center">
-    <img
-      src="/logo.svg"
-      alt="VoxLinker"
-      className="h-10 w-auto"
-    />
-  </Link>
+  <Link
+  href="/"
+  className="flex items-center justify-center group"
+>
+  <img
+    src="/logo.svg"
+    alt="VoxLinker"
+    className="
+      h-7 sm:h-8 md:h-9 lg:h-10
+      w-auto
+      transition duration-300
+      group-hover:scale-[1.05]
+    "
+  />
+</Link>
 </div>
             </div>
           </div>
