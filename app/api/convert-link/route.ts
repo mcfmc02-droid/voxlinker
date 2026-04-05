@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       OR: [
         { websiteUrl: { contains: domain } },
         { slug: { equals: domain.split(".")[0] } },
-        { domain: { contains: domain } }, // optional field if you use it
+        
       ],
     },
     include: {
