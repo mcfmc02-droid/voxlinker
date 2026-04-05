@@ -55,7 +55,7 @@ if (!offer) {
       }
     })
 
-    const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/track/${code}`
+    const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${code}`
 
     return NextResponse.json({
       success: true,

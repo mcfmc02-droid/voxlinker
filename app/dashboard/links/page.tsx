@@ -18,9 +18,9 @@ export default function LinksPage() {
 
   // تحميل Journal
   useEffect(() => {
-    fetch("/api/my-links")
+    fetch("/api/links/my-links")
       .then(res => res.json())
-      .then(data => setJournal(data.links))
+      .then(data => setJournal(data))
   }, [])
 
   const handleConvert = async () => {
@@ -218,7 +218,7 @@ gap-4">
 
     {journal.map((link, index) => {
 
-      const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/track/${link.code}`
+      const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${link.code}`
 
       return (
         <motion.div
