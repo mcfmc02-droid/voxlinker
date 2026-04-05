@@ -154,11 +154,10 @@ const handleGenerateLink = async (brandId: number) => {
 
     const data = await res.json()
 
-    if (data.code) {
-      const fullLink = `${window.location.origin}/track/${data.code}`
-      setGeneratedLink(fullLink)
-      setModalOpen(true)
-    }
+if (data.link) {
+  setGeneratedLink(data.link)
+  setModalOpen(true)
+}
   } finally {
     setGenerating(null)
   }

@@ -3,17 +3,29 @@ import { NextResponse } from "next/server"
 import { getUserFromSession } from "@/lib/auth"
 import { randomUUID } from "crypto"
 
-function extractDomain(url: string) {
+/* ===== DOMAIN NORMALIZER ===== */
+function normalizeDomain(url: string) {
   try {
     const parsed = new URL(url)
-    return parsed.hostname.replace("www.", "")
+
+    let host = parsed.hostname.toLowerCase()
+
+    // remove www
+    host = host.replace(/^www\./, "")
+
+    // remove subdomains (m., shop., etc)
+    const parts = host.split(".")
+    if (parts.length > 2) {
+      host = parts.slice(-2).join(".")
+    }
+
+    return host
   } catch {
     return null
   }
 }
 
 export async function POST(req: Request) {
-
   const user = await getUserFromSession()
 
   if (!user) {
@@ -26,24 +38,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "URL required" }, { status: 400 })
   }
 
-  const domain = extractDomain(url)
+  const domain = normalizeDomain(url)
 
   if (!domain) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 })
   }
 
-  // نبحث عن Brand مطابق للدومين
+  /* ===== FIND BRAND (SMART MATCH) ===== */
   const brand = await prisma.brand.findFirst({
     where: {
-      websiteUrl: {
-        contains: domain
-      }
+      OR: [
+        { websiteUrl: { contains: domain } },
+        { slug: { equals: domain.split(".")[0] } },
+        { domain: { contains: domain } }, // optional field if you use it
+      ],
     },
     include: {
       offers: {
-        where: { status: "ACTIVE" }
-      }
-    }
+        where: { status: "ACTIVE" },
+      },
+    },
   })
 
   if (!brand || brand.offers.length === 0) {
@@ -55,30 +69,31 @@ export async function POST(req: Request) {
 
   const offer = brand.offers[0]
 
- // قبل إنشاء رابط جديد نبحث هل موجود سابقاً
-const existingLink = await prisma.affiliateLink.findFirst({
-  where: {
-    userId: user.id,
-    originalUrl: url,
-  },
-})
+  /* ===== CHECK EXISTING LINK (CACHE) ===== */
+  const existingLink = await prisma.affiliateLink.findFirst({
+    where: {
+      userId: user.id,
+      originalUrl: url,
+    },
+  })
 
-if (existingLink) {
-  const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/track/${existingLink.code}`
-  return NextResponse.json({ link: fullLink })
-}
+  if (existingLink) {
+    return NextResponse.json({
+      link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existingLink.code}`,
+    })
+  }
 
-// إذا لا يوجد، ننشئ واحد جديد
-const affiliateLink = await prisma.affiliateLink.create({
-  data: {
-    code: randomUUID(),
-    userId: user.id,
-    offerId: offer.id,
-    originalUrl: url,
-  },
-})
+  /* ===== CREATE NEW LINK ===== */
+  const affiliateLink = await prisma.affiliateLink.create({
+    data: {
+      code: randomUUID(),
+      userId: user.id,
+      offerId: offer.id,
+      originalUrl: url,
+    },
+  })
 
-const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/track/${affiliateLink.code}`
-
-return NextResponse.json({ link: fullLink })
+  return NextResponse.json({
+    link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${affiliateLink.code}`,
+  })
 }

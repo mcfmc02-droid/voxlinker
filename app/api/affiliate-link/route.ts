@@ -12,35 +12,45 @@ export async function POST(req: Request) {
 
   const { brandId } = await req.json()
 
-  // تحقق هل الرابط موجود مسبقاً
+  if (!brandId) {
+    return NextResponse.json(
+      { error: "brandId is required" },
+      { status: 400 }
+    )
+  }
+
+  // 🔎 تحقق هل الرابط موجود مسبقاً
   const existing = await prisma.affiliateLink.findFirst({
     where: {
       userId: user.id,
       offer: {
         brandId
       }
-    },
-    include: {
-      offer: true
     }
   })
 
   if (existing) {
-    return NextResponse.json(existing)
+    return NextResponse.json({
+      link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
+    })
   }
 
-  // نأخذ أول Offer تابع للعلامة
+  // 🔥 نأخذ offer فعال فقط
   const offer = await prisma.offer.findFirst({
-    where: { brandId }
+    where: {
+      brandId,
+      status: "ACTIVE"
+    }
   })
 
-  if (!offer) {
+  if (!offer || !offer.landingUrl) {
     return NextResponse.json(
-      { error: "No offer found for this brand" },
+      { error: "No active offer available for this brand" },
       { status: 400 }
     )
   }
 
+  // 🔥 إنشاء الرابط
   const newLink = await prisma.affiliateLink.create({
     data: {
       code: nanoid(8),
@@ -49,5 +59,8 @@ export async function POST(req: Request) {
     }
   })
 
-  return NextResponse.json(newLink)
+  // 🔥 إرجاع الرابط النهائي مباشرة
+  return NextResponse.json({
+    link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${newLink.code}`
+  })
 }

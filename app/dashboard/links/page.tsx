@@ -51,7 +51,7 @@ export default function LinksPage() {
       setGeneratedLink(data.trackUrl)
 
       // تحديث Journal مباشرة
-      const refresh = await fetch("/api/my-links")
+      const refresh = await fetch("/api/links/my-links")
       const updated = await refresh.json()
       setJournal(updated)
 
@@ -285,7 +285,7 @@ gap-4">
 
 <button
   onClick={async () => {
-    await fetch(`/api/my-links/${link.id}`, {
+    await fetch(`/api/links/my-links/${link.id}`, {
       method: "DELETE"
     })
 
