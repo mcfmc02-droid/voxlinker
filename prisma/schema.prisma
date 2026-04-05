@@ -419,25 +419,53 @@ model Offer {
 //////////////////////////////////////////////////////
 
 model AffiliateLink {
-  id   Int    @id @default(autoincrement())
-  code String @unique
+  id        Int    @id @default(autoincrement())
+  code      String @unique
 
-  userId  Int
-  offerId Int
+  // 🔗 RELATIONS
+  userId    Int
+  offerId   Int
 
-  originalUrl String?
-  campaignName String?
+  user      User   @relation(fields: [userId], references: [id])
+  offer     Offer  @relation(fields: [offerId], references: [id])
 
-  createdAt DateTime @default(now())
+  // 🔗 LINK DATA
+  originalUrl   String?   // deep link (product)
+  finalUrl      String?   // optional (future use for rewritten links)
 
-  user  User  @relation(fields: [userId], references: [id])
-  offer Offer @relation(fields: [offerId], references: [id])
+  // 📊 TRACKING PARAMS (VERY IMPORTANT)
+  campaignName  String?
+  sub1          String?   // traffic source
+  sub2          String?   // campaign
+  sub3          String?   // ad
+  sub4          String?
+  sub5          String?
 
-  clicks      Click[]
-  conversions Conversion[]
+  // IMAGE & TITLE 
+  title     String?
+  imageUrl  String?
 
+  // 📈 STATS (optional optimization)
+  clicksCount       Int    @default(0)
+  conversionsCount  Int    @default(0)
+
+  // 🛡️ CONTROL
+  isActive     Boolean @default(true)
+  isDeleted    Boolean @default(false)
+
+  // ⏱️ TIMESTAMPS
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 🔁 RELATIONS
+  clicks       Click[]
+  conversions  Conversion[]
+
+  // ⚡ INDEXES (IMPORTANT FOR PERFORMANCE)
   @@index([userId])
   @@index([offerId])
+  @@index([code])
+  @@index([createdAt])
 }
 
 //////////////////////////////////////////////////////
