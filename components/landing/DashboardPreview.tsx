@@ -31,7 +31,7 @@ viewport={{once:true}}
 
 <h2 className="
 text-[26px] sm:text-[30px] md:text-[34px] lg:text-[38px]
-font-semibold
+font-medium
 leading-[1.25]
 tracking-[-0.015em]
 text-[#0f172a]

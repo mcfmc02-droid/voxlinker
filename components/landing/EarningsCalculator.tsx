@@ -103,7 +103,7 @@ export default function EarningsCalculator(){
   {/* HEADER */}
   <div className="text-center mb-20">
 
-  <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+  <h2 className="text-2xl md:text-4xl font-medium mb-4">
   Estimate Your Creator Earnings
   </h2>
 
@@ -121,7 +121,7 @@ export default function EarningsCalculator(){
 
     <div className="space-y-5 max-w-[460px]">
 
-  <h3 className="text-xl md:text-2xl font-semibold text-[#0f172a] leading-snug">
+  <h3 className="text-xl md:text-2xl font-medium text-[#0f172a] leading-snug">
     See how your content translates into real revenue
   </h3>
 

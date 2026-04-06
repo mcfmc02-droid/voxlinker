@@ -33,7 +33,7 @@ return(
 
 <div className="text-center mb-24">
 
-<h2 className="text-3xl md:text-4xl font-semibold mb-4">
+<h2 className="text-2xl md:text-4xl font-medium mb-4">
 How VoxLinker Works
 </h2>
 
@@ -81,7 +81,7 @@ Step {index+1}
 
 {/* TITLE */}
 
-<h3 className="text-xl font-semibold mb-3">
+<h3 className="text-xl font-medium mb-3">
 {step.title}
 </h3>
 

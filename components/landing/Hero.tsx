@@ -33,7 +33,7 @@ return(
   className="
   relative w-full
 
-  pt-14 sm:pt-10 md:pt-10 lg:pt-10 xl:pt-14 lg:mt-4 xl:mt-18
+  pt-14 sm:pt-10 md:pt-10 lg:pt-10 xl:pt-14 lg:mt-2 xl:mt-4
 
   px-5 sm:px-8 md:px-10 xl:px-20
 

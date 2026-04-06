@@ -95,7 +95,7 @@ export default function BrandMarquee() {
       <div className="max-w-7xl mx-auto text-center mb-14 md:mb-18 px-6">
 
 
-        <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+        <h2 className="text-2xl md:text-4xl font-medium mb-4">
           Promote products from thousands of global brands
         </h2>
 

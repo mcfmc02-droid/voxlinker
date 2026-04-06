@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 import PhoneInput from "react-phone-input-2";
-
+import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { Country } from "country-state-city";
 import zxcvbn from "zxcvbn";

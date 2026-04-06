@@ -76,11 +76,9 @@ initial={{opacity:0,x:-60}}
 animate={{opacity: inView ? 1 : 0.4, x: inView ? 0 : -30}}
 transition={{duration:0.8}}
 > 
-<p className="text-xs sm:text-sm uppercase tracking-widest text-[#ffb48a] mb-3 sm:mb-4">
-Creator Commerce
-</p>
 
-<h2 className="text-[28px] sm:text-[34px] md:text-[42px] lg:text-[50px] font-semibold leading-[1.3] mb-5 md:mb-6">
+
+<h2 className="text-[28px] sm:text-[34px] md:text-[42px] lg:text-[50px] font-medium leading-[1.3] mb-5 md:mb-6">
 Monetize your audience  
 <span className="text-[#ff9a6c]"> directly from mobile</span>
 </h2>

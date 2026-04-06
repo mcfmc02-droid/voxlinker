@@ -50,11 +50,9 @@ export default function FeaturedArticles() {
 
       {/* HEADER */}
       <div className="text-center mb-16 px-6">
-        <p className="text-xs tracking-widest text-[#ff9a6c] uppercase">
-          Featured content
-        </p>
+       
 
-        <h2 className="text-3xl md:text-4xl font-semibold mb-4 text-[#0f172a]">
+        <h2 className="text-2xl md:text-4xl font-medium mb-4 text-[#0f172a]">
           Learn what actually works
         </h2>
 
@@ -113,11 +111,11 @@ export default function FeaturedArticles() {
           {/* TEXT */}
           <div className="w-full md:w-[52%]">
 
-            <p className="text-xs font-semibold text-[#ff9a6c] mb-2 tracking-wide">
+            <p className="text-xs font-medium text-[#ff9a6c] mb-2 tracking-wide">
               {data[index].brand}
             </p>
 
-            <h3 className="text-[20px] md:text-[24px] font-semibold text-[#0f172a] leading-snug">
+            <h3 className="text-[20px] md:text-[24px] font-medium text-[#0f172a] leading-snug">
               {data[index].title}
             </h3>
 

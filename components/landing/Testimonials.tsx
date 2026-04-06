@@ -61,7 +61,7 @@ return(
 <section className="py-24 bg-[#fafafa] text-center">
 
 {/* TITLE */}
-<h2 className="text-3xl md:text-4xl font-semibold mb-4">
+<h2 className="text-2xl md:text-4xl font-medium mb-4">
 Loved by Top Creators Worldwide
 </h2>
 

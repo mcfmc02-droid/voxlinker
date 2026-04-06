@@ -33,7 +33,7 @@ return(
 
 <div className="text-center mb-24">
 
-<h2 className="text-3xl md:text-4xl font-semibold mb-4">
+<h2 className="text-2xl md:text-4xl font-medium mb-4">
 Infrastructure Built for Scale
 </h2>
 
@@ -71,7 +71,7 @@ className="text-[#ff9a6c] group-hover:scale-110 transition"
 
 </div>
 
-<h3 className="text-xl font-semibold mb-4">
+<h3 className="text-xl font-medium mb-4">
 {feature.title}
 </h3>
 
