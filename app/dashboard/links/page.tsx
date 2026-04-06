@@ -17,6 +17,7 @@ export default function LinksPage() {
   const [sub3, setSub3] = useState("")
   const [campaign, setCampaign] = useState("")
   const [copiedMain, setCopiedMain] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   // تحميل Journal
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function LinksPage() {
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 1500)
   }
+
 
 
   return (
@@ -418,30 +420,28 @@ cursor-pointer
 
 <button
   onClick={async () => {
-    await fetch(`/api/links/my-links/${link.id}`, {
+    const res = await fetch(`/api/links/${link.id}`, {
       method: "DELETE"
     })
 
-    setJournal(journal.filter((l) => l.id !== link.id))
+    if (res.ok) {
+      setJournal((prev) => prev.filter((l) => l.id !== link.id))
+    } else {
+      alert("Failed to delete link")
+    }
   }}
   className="
 w-full xl:w-auto
 px-6 py-3
-
 text-sm font-medium
-
 rounded-xl
-
 bg-white text-black border border-gray-300
-
 transition-all duration-200
-
 hover:bg-black hover:text-white hover:border-black
-
 cursor-pointer
 "
 >
-  Delete
+ {deletingId === link.id ? "Deleting..." : "Delete"}
 </button>
 
           </div>

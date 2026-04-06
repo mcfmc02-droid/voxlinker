@@ -197,11 +197,7 @@ max-w-5xl mx-auto
         Manage your account profile and security settings
       </PageSubtitle>
 
-      {toast && (
-        <div className="mb-6 bg-green-100 text-green-700 px-4 py-3 rounded-xl shadow-sm">
-          {toast}
-        </div>
-      )}
+      
 
       {/* Tabs */}
       <div className="flex gap-10 border-b border-gray-200 mb-10 mt-8">
@@ -503,6 +499,24 @@ mt-10
 >
   Save Public Profile
 </button>
+
+{toast && (
+        <div className="
+  mt-2
+
+  text-sm
+
+  text-red-600
+  bg-red-50
+  border border-red-200
+
+  px-4 py-2
+
+  rounded-lg
+  ">
+          {toast}
+        </div>
+      )}
 
 </div>
 

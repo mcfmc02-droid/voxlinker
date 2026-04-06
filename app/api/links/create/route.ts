@@ -213,25 +213,25 @@ export async function POST(req: Request) {
 
     // ✨ CREATE
     const link = await prisma.affiliateLink.create({
-      data: {
-        code: generateCode(),
-        userId: user.id,
-        offerId: offer.id,
+  data: {
+    code: generateCode(),
+    userId: user.id,
+    offerId: offer.id,
 
-        originalUrl,
-        
-        // ✨ NEW DATA
-          title,
-          imageUrl,
+    // 🔥 الرابط الذي يربح
+    originalUrl: offer.landingUrl,
 
-        campaignName: campaign || null,
-        sub1: sub1 || null,
-        sub2: sub2 || null,
-        sub3: sub3 || null,
-        sub4: sub4 || null,
-        sub5: sub5 || null
-      }
-    })
+    title,
+    imageUrl,
+
+    campaignName: campaign || null,
+    sub1: sub1 || null,
+    sub2: sub2 || null,
+    sub3: sub3 || null,
+    sub4: sub4 || null,
+    sub5: sub5 || null
+  }
+})
 
     return NextResponse.json({
       success: true,

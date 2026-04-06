@@ -52,12 +52,15 @@ export async function POST(req: Request) {
 
   // 🔥 إنشاء الرابط
   const newLink = await prisma.affiliateLink.create({
-    data: {
-      code: nanoid(8),
-      userId: user.id,
-      offerId: offer.id
-    }
-  })
+  data: {
+    code: nanoid(8),
+    userId: user.id,
+    offerId: offer.id,
+
+    // 🔥 هذا هو الإصلاح الأساسي
+    originalUrl: offer.landingUrl
+  }
+})
 
   // 🔥 إرجاع الرابط النهائي مباشرة
   return NextResponse.json({

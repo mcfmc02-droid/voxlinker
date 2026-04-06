@@ -12,26 +12,24 @@ export async function GET(
   try {
     const { code } = await context.params
 
+    // 🔎 جلب الرابط
     const affiliateLink = await prisma.affiliateLink.findUnique({
       where: { code },
       include: { offer: true },
     })
 
     if (!affiliateLink) {
-      return NextResponse.json(
-        { error: "Invalid tracking code" },
-        { status: 404 }
-      )
+      return NextResponse.redirect("https://google.com")
     }
 
     const url = new URL(req.url)
 
     // ===== SUB IDS =====
-    const sub1 = url.searchParams.get("sub1") ?? undefined
-    const sub2 = url.searchParams.get("sub2") ?? undefined
-    const sub3 = url.searchParams.get("sub3") ?? undefined
-    const sub4 = url.searchParams.get("sub4") ?? undefined
-    const sub5 = url.searchParams.get("sub5") ?? undefined
+    const sub1 = url.searchParams.get("sub1") || undefined
+    const sub2 = url.searchParams.get("sub2") || undefined
+    const sub3 = url.searchParams.get("sub3") || undefined
+    const sub4 = url.searchParams.get("sub4") || undefined
+    const sub5 = url.searchParams.get("sub5") || undefined
 
     // ===== HEADERS =====
     const ip =
@@ -39,22 +37,23 @@ export async function GET(
       req.headers.get("x-real-ip") ||
       undefined
 
-    const userAgent = req.headers.get("user-agent") ?? undefined
-    const referrer = req.headers.get("referer") ?? undefined
+    const userAgent = req.headers.get("user-agent") || undefined
+    const referrer = req.headers.get("referer") || undefined
+
+    // ===== FRAUD CHECK =====
+    const isBot = userAgent ? detectBot(userAgent) : false
+    const isSpam = ip ? detectClickSpam(ip) : false
+    const shouldTrack = !isBot && !isSpam
 
     // ===== CLICK ID =====
     const clickId = randomUUID()
 
-    // ===== REDIRECT URL =====
-    const redirectUrl =
-      affiliateLink.originalUrl ||
-      affiliateLink.offer.landingUrl
+    // ===== REDIRECT URL (IMPORTANT FIX) =====
+    const redirectUrl = affiliateLink.originalUrl
 
     if (!redirectUrl || !redirectUrl.startsWith("http")) {
-      return NextResponse.json(
-        { error: "Invalid offer URL" },
-        { status: 400 }
-      )
+      console.error("Invalid redirect URL:", affiliateLink.id)
+      return NextResponse.redirect("https://google.com")
     }
 
     const finalUrl = new URL(redirectUrl)
@@ -71,41 +70,40 @@ export async function GET(
     if (sub4) finalUrl.searchParams.set("sub4", sub4)
     if (sub5) finalUrl.searchParams.set("sub5", sub5)
 
-    // 🔥🔥🔥 1. REDIRECT فوري
+    // 🔥 REDIRECT فوري
     const response = NextResponse.redirect(finalUrl.toString())
 
-    // 🔥🔥🔥 2. TRACKING في الخلفية (بدون await)
-    ;(async () => {
-      try {
-        await bufferClick({
-          clickId,
-          affiliateLinkId: affiliateLink.id,
-          offerId: affiliateLink.offerId,
-          userId: affiliateLink.userId,
-          ipAddress: ip,
-          userAgent,
-          referrer,
-          sub1,
-          sub2,
-          sub3,
-          sub4,
-          sub5,
-        })
+    // 🔥 TRACKING في الخلفية (فقط إذا user حقيقي)
+    if (shouldTrack) {
+      ;(async () => {
+        try {
+          await bufferClick({
+            clickId,
+            affiliateLinkId: affiliateLink.id,
+            offerId: affiliateLink.offerId,
+            userId: affiliateLink.userId,
+            ipAddress: ip,
+            userAgent,
+            referrer,
+            sub1,
+            sub2,
+            sub3,
+            sub4,
+            sub5,
+          })
 
-        await trackClick(affiliateLink.offerId)
-      } catch (e) {
-        console.log("Background tracking failed")
-      }
-    })()
+          await trackClick(affiliateLink.offerId)
+        } catch (e) {
+          console.log("Background tracking failed")
+        }
+      })()
+    }
 
     return response
 
   } catch (error) {
     console.error("Tracking error:", error)
 
-    return NextResponse.json(
-      { error: "Tracking failed" },
-      { status: 500 }
-    )
+    return NextResponse.redirect("https://google.com")
   }
 }
