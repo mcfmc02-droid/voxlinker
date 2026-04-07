@@ -1,343 +1,240 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect, memo } from "react"
 
-/* ===== CURVE ===== */
-function Curve({ from, to, delay = 0 }: any) {
-const cx = (from.x + to.x) / 2
-const cy = Math.min(from.y, to.y) - 80
+/* ================= CURVE ================= */
+const Curve = memo(function Curve({ from, to, delay = 0, offsetX = 0 }: any) {
+  const cx = (from.x + to.x) / 2 + offsetX
+  const cy = Math.min(from.y, to.y) - 120
 
-const d = `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`
+  const d = `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`
 
-return (
-<>
-{/* line */}
-<motion.path
-d={d}
-stroke="#ff9a6c"
-strokeWidth={1.5}
-fill="none"
-strokeLinecap="round"
-initial={{ pathLength: 0 }}
-animate={{ pathLength: 1 }}
-transition={{ duration: 1.6, delay }}
-/>
+  return (
+    <>
+      <motion.path
+        d={d}
+        stroke="url(#gradient)"
+        strokeWidth={2.2}
+        fill="none"
+        strokeLinecap="round"
+        style={{ filter: "drop-shadow(0 0 5px #ff9a6c)" }}
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 2, delay, ease: "easeInOut" }}
+      />
 
-{/* moving dot */}  
-  <motion.circle
+      <motion.circle
+        r="3"
+        fill="#ff9a6c"
+        style={{
+          offsetPath: `path("${d}")`,
+          offsetRotate: "0deg",
+          filter: "drop-shadow(0 0 6px #ff9a6c)"
+        }}
+        initial={{ offsetDistance: "0%" }}
+        animate={{ offsetDistance: "100%" }}
+        transition={{
+          duration: 3,
+          delay,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      />
+    </>
+  )
+})
 
-r="3.5"
-fill="#ff9a6c"
-initial={{ offsetDistance: "0%" }}
-animate={{ offsetDistance: "100%" }}
-transition={{
-duration: 2.5,
-delay,
-repeat: Infinity,
-ease: "linear"
-}}
-style={{
-offsetPath: `path("${d}")`,
-offsetRotate: "0deg",
-transformBox: "fill-box",
-transformOrigin: "center"
-}}
-/>
-</>
-)
-}
+/* ================= MAIN ================= */
+export default function HeroMapGlobal() {
+  const [active, setActive] = useState<string | null>(null)
+  const [hovered, setHovered] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  const [sequenceIndex, setSequenceIndex] = useState(0)
 
-export default function HeroMapUltra() {
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
-const [active, setActive] = useState<string | null>(null)
+  const order = ["US", "BR", "EU", "NG", "ASIA", "AU"]
 
-/* ===== إحداثيات حقيقية داخل viewBox ===== */
-const points = {
-US: { x: 160, y: 130 },
-BR: { x: 300, y: 340 },
-EU: { x: 480, y: 110 },
-NG: { x: 500, y: 240 },
-UAE: { x: 620, y: 220 },
-IN: { x: 850, y: 380 },
-}
+  /* ===== LOOP مع Pause ===== */
+  useEffect(() => {
+    if (hovered) return // توقف عند hover
 
-const offsets = {
-  US: { x: -90, y: -100 },
-  EU: { x: -80, y: -100 },
-  UAE: { x: -70, y: -105 },
-  IN: { x: -85, y: -100 },
-  BR: { x: -100, y: -110 },
-  NG: { x: -75, y: -100 },
-}
+    const interval = setInterval(() => {
+      setSequenceIndex((prev) => (prev + 1) % order.length)
+    }, 1800)
 
-const links = [
-["US","EU"],
-["EU","UAE"],
-["UAE","IN"],
-["EU","NG"],
-["US","BR"],
-]
+    return () => clearInterval(interval)
+  }, [hovered])
 
-const data = {
-US: {
-name: "North America",
-creators: "4,200",
-share: "42%"
-},
-EU: {
-name: "Europe",
-creators: "2,800",
-share: "24%"
-},
-IN: {
-name: "Australia",
-creators: "600",
-share: "3%"
-},
-BR: {
-name: "South America",
-creators: "1,200",
-share: "7%"
-},
-NG: {
-name: "Africa",
-creators: "900",
-share: "4%"
-},
-UAE: {
-name: "Asia",
-creators: "3,100",
-share: "20%"
-}
-}
+  const currentActive = hovered || order[sequenceIndex]
 
-const isMobile =
-  typeof window !== "undefined" && window.innerWidth < 768
+  /* ===== POINTS ===== */
+  const points = {
+    US: { x: 180, y: 150 },
+    BR: { x: 300, y: 360 },
+    EU: { x: 520, y: 140 },
+    NG: { x: 520, y: 270 },
+    ASIA: { x: 720, y: 230 },
+    AU: { x: 860, y: 360 },
+  }
 
-  const isZoomed =
-  typeof window !== "undefined" && window.devicePixelRatio > 2
+  const links = [
+    ["US","EU", 0],
+    ["EU","ASIA", 0],
+    ["ASIA","AU", 0],
+    ["EU","NG", 80], // 👈 FIX: انحراف لاظهار الخط
+    ["US","BR", 0],
+  ]
 
-return (
-<div className="relative flex justify-center items-center">
+  const data = {
+    US: { name: "North America", creators: "4,200", share: "42%" },
+    EU: { name: "Europe", creators: "2,800", share: "24%" },
+    ASIA: { name: "Asia", creators: "3,100", share: "20%" },
+    AU: { name: "Australia", creators: "900", share: "6%" },
+    BR: { name: "South America", creators: "1,200", share: "7%" },
+    NG: { name: "Africa", creators: "900", share: "4%" },
+  }
 
-<motion.div
+  const scale = isMobile ? 1.05 : 1
+
+  return (
+    <div className="relative flex justify-center items-center w-full overflow-hidden">
+
+      <div
+        className="relative w-[320px] sm:w-[420px] md:w-[520px] lg:w-[620px] aspect-[2/1]"
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+        }}
+      >
+
+        {/* ===== MAP ===== */}
+        <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full">
+          <defs>
+            <linearGradient id="gradient">
+              <stop offset="0%" stopColor="#ff9a6c" stopOpacity="0" />
+              <stop offset="50%" stopColor="#ff9a6c" />
+              <stop offset="100%" stopColor="#ff9a6c" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          <image
+            href="/world-map.svg"
+            width="1000"
+            height="500"
+            opacity="0.2"
+          />
+        </svg>
+
+        {/* ===== LINES ===== */}
+        <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full z-10">
+          {links.map(([a,b,offset],i)=>(
+            <Curve
+              key={i}
+              from={points[a as keyof typeof points]}
+              to={points[b as keyof typeof points]}
+              delay={i * 0.3}
+              offsetX={offset}
+            />
+          ))}
+        </svg>
+
+        {/* ===== NODES ===== */}
+        <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full z-20">
+          {Object.entries(points).map(([key, p]) => (
+            <g
+              key={key}
+              onMouseEnter={() => setHovered(key)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => setActive(key)}
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
+
+              <motion.circle
+                cx={p.x}
+                cy={p.y}
+                r="4"
+                fill="#ff9a6c"
+                style={{ filter: "drop-shadow(0 0 6px #ff9a6c)" }}
+                animate={
+                  currentActive === key
+                    ? { scale: 2, opacity: 1 }
+                    : { scale: [1, 1.6, 1], opacity: [0.6, 1, 0.6] }
+                }
+                transition={{
+                  duration: 2,
+                  repeat: currentActive === key ? 0 : Infinity,
+                }}
+              />
+            </g>
+          ))}
+        </svg>
+
+        {/* ===== CARDS ===== */}
+        <div className="absolute inset-0 pointer-events-none z-30">
+          {Object.entries(points).map(([key, p]) => {
+            const d = data[key as keyof typeof data]
+
+            const left = (p.x / 1000) * 100
+            const top = (p.y / 500) * 100
+
+            const isActive = currentActive === key
+
+            return (
+              <motion.div
+  key={key}
   style={{
-    rotateX: isMobile ? 0 : 12,
-    rotateY: isMobile ? 0 : -10,
-    transformPerspective: 1200,
-
-    /* 🔥 تثبيت GPU */
-    transformStyle: "preserve-3d",
-    willChange: "transform",
-    backfaceVisibility: "hidden",
-    WebkitBackfaceVisibility: "hidden",
+    position: "absolute",
+    left: `${left}%`,
+    top: `${top}%`,
+    transform: "translate(-50%, -115%)", // 👈 فوق النقطة مباشرة
+    maxWidth: isMobile ? "85px" : "150px"
   }}
-    className="  
-    relative  
-    w-[300px] sm:w-[380px] md:w-[460px] lg:w-[540px]  
-    aspect-[2/1]  
-    "  
-  >  
-
-    {/* ===== GRID (Globe Effect) ===== */}
-
-{!isZoomed && (
-<div
-  className="absolute inset-0"
-  style={{
-    transform: "perspective(900px) rotateX(40deg) scaleY(1.2) scaleX(0.95) translateZ(0)",  
-    transformOrigin: "center",  /* ✨ هذا هو السحر */  
-WebkitMaskImage:  
-  "radial-gradient(ellipse at center, black 55%, transparent 100%)",  
-maskImage:  
-  "radial-gradient(ellipse at center, black 55%, transparent 100%)",
-
-}}
-
-> 
-
-{/* خطوط أفقية */}
-{[...Array(10)].map((_, i) => (
-<div
-key={i}
-className="absolute left-0 w-full h-[1px] bg-black/5"
-style={{
-top: `${i * 10}%`,
-transform: "scaleX(0.9)"
-}}
-/>
-))}
-
-{/* خطوط عمودية */}
-{[...Array(10)].map((_, i) => (
-<div
-key={i}
-className="absolute top-0 h-full w-[1px] bg-black/5"
-style={{
-left: `${i * 10}%`,
-transform: "scaleY(0.9)"
-}}
-/>
-))}
-
-</div>
-)}
-
-
-  {/* ===== MAP SVG ===== */}  
-    <svg
-  viewBox="0 0 1000 500"
-  className="absolute inset-0 w-full h-full pointer-events-auto"
-  style={{
-    transform: "translateZ(0)"
-  }}
+  initial={{ opacity: 0, scale: 0.85 }}
+  animate={
+    isActive
+      ? { opacity: 1, scale: 1 }
+      : { opacity: 0, scale: 0.85 }
+  }
+  transition={{ duration: 0.25 }}
+  className={`
+    bg-white/95 backdrop-blur-xl
+    shadow-md
+    rounded-md border border-gray-100
+    ${isMobile ? "px-1.5 py-1 text-[8.5px]" : "px-3 py-2 text-xs"}
+  `}
 >
+  {/* ===== TITLE ===== */}
+  <div className="font-semibold text-gray-900 leading-tight tracking-tight truncate">
+    {d.name}
+  </div>
 
-{/* map */}  
-      <image  
-        href="/world-map.svg"  
-        width="1000"  
-        height="500"  
-        opacity="0.25"  
-      />  
+  {/* ===== SUBTITLE ===== */}
+  <div className="text-gray-400 leading-tight mt-[1px] truncate">
+    {d.creators} creators
+  </div>
 
-      {/* ===== LINES ===== */}  
-      {links.map(([a,b],i)=>(  
-        <Curve  
-          key={i}  
-          from={points[a as keyof typeof points]}
+  {/* ===== META ===== */}
+  <div className="leading-tight mt-[1px] text-gray-500">
+    <span className="text-green-500 font-semibold">
+      {d.share}
+    </span>{" "}
+    revenue
+  </div>
+</motion.div>
 
-to={points[b as keyof typeof points]}
-delay={i * 0.2}
-/>
-))}
+            )
+          })}
+        </div>
 
-
-
-{/* ===== AUTO CARDS (CINEMATIC) ===== */}
-
-{Object.entries(points).map(([key, p], i) => {
-
-const d = data[key as keyof typeof data]
-const offset = offsets[key as keyof typeof offsets]
-
-return (
-<foreignObject
-key={key}
-x={p.x + offset.x}
-y={p.y + offset.y}
-width="150"
-height="200"
-style={{ pointerEvents: "none" }}
-
-> 
-<motion.div
-initial={{ opacity: 0, scale: 0.7, y: 10 }}
-animate={
-active === key
-? {
-opacity: 1,
-scale: 1.02,
-y: 0
-}
-: {
-opacity: [0, 1, 1, 0],
-scale: [0.7, 1.02, 1, 0.9],
-y: [10, 0, 0, 5]
-}
-}
-transition={
-active === key
-? {
-duration: 0.35,
-ease: "easeOut"
-}
-: {
-duration: 4.5,
-delay: i * 0.8,
-repeat: active === key ? 0 : Infinity, // 👈 الحل هنا
-repeatDelay: 2,
-ease: "easeInOut"
-}
-}
-className="
-bg-white/95 backdrop-blur-md
-shadow-[0_10px_30px_rgba(255,154,108,0.15)]
-rounded-xl px-3 py-2
-text-xs border border-gray-100
-"
-
-> 
-
-<div className="font-semibold text-gray-900">  
-      {d.name}  
-    </div>  
-
-    <div className="text-gray-500 text-[11px] mt-1">  
-      {d.creators} Active creators  
-    </div>  
-
-    <div className="text-[11px] text-gray-500">
-
-  <span className="text-green-500 font-semibold">  
-    {d.share}  
-  </span>{" "}  
-  revenue share  
-</div>
-
-  </motion.div>  
-</foreignObject>
-
-)
-})}
-
-{/* ===== NODES ===== */}
-
-{Object.entries(points).map(([key, p], i) => (
-<g
-key={key}
-onMouseEnter={() => setActive(key)}
-onMouseLeave={() => setActive(null)}
-style={{ cursor: "pointer", pointerEvents: "all" }}
-
-> 
-
-{/* 🔥 HIT AREA (غير مرئية) */}
-    <circle
-      cx={p.x}
-      cy={p.y}
-      r="18"
-      fill="transparent"
-    />
-
-<motion.circle  
-  cx={p.x}  
-  cy={p.y}  
-  r="4"  
-  fill="#ff9a6c"  
-  animate={{  
-    scale: active === key ? 1.8 : [1, 1.5, 1],  
-    opacity: active === key ? 1 : [0.7, 1, 0.7]  
-  }}  
-  transition={{  
-    duration: 2,  
-    repeat: active === key ? 0 : Infinity  
-  }}  
-/>
-</g>  
-
-
-))}  
-
-</svg>  
-
-      
-
-  </motion.div>  
-
-    
-</div>
-
-)
+      </div>
+    </div>
+  )
 }

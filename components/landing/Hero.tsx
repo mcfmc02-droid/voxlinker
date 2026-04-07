@@ -148,7 +148,7 @@ relative
 w-full
 flex justify-center items-Start
 
-min-h-[150px] md:min-h-[150px]
+min-h-[250px] md:min-h-[450px]
 flex items-center
 ">
 
