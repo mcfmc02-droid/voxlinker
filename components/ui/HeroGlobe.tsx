@@ -76,12 +76,12 @@ export default function HeroMapGlobal() {
 
   /* ===== POINTS ===== */
   const points = {
-    US: { x: 180, y: 150 },
-    BR: { x: 300, y: 360 },
-    EU: { x: 520, y: 140 },
+    US: { x: 120, y: 130 },
+    BR: { x: 280, y: 300 },
+    EU: { x: 480, y: 110 },
     NG: { x: 520, y: 270 },
-    ASIA: { x: 720, y: 230 },
-    AU: { x: 860, y: 360 },
+    ASIA: { x: 700, y: 230 },
+    AU: { x: 820, y: 380 },
   }
 
   const links = [
