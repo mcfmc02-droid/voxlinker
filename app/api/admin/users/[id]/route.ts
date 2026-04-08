@@ -3,6 +3,10 @@ export const runtime = "nodejs"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import jwt from "jsonwebtoken"
+import { sendEmail } from "@/lib/email/sendEmail"
+import { approvedEmail, rejectedEmail } from "@/lib/email/templates"
+import { updateUserStatus } from "@/lib/user/updateUserStatus"
+
 
 /* ================= PATCH USER ================= */
 export async function PATCH(
@@ -58,10 +62,41 @@ export async function PATCH(
     /* ========= UPDATE USER ========= */
     const { id } = await context.params
 
-const updatedUser = await prisma.user.update({
-  where: { id: Number(id) },
-  data: { status: body.status },
-})
+const updatedUser = await updateUserStatus(
+  Number(id),
+  body.status
+)
+
+/* ========= NAME FIX ========= */
+const displayName =
+  updatedUser.firstName && updatedUser.lastName
+    ? `${updatedUser.firstName} ${updatedUser.lastName}`
+    : updatedUser.name || "there"
+
+/* ========= EMAILS ========= */
+if (body.status === "ACTIVE") {
+  try {
+    await sendEmail({
+      to: updatedUser.email,
+      subject: "You're approved 🎉",
+      html: approvedEmail(displayName),
+    })
+  } catch (e) {
+    console.error("EMAIL ERROR (APPROVED):", e)
+  }
+}
+
+if (body.status === "REJECTED") {
+  try {
+    await sendEmail({
+      to: updatedUser.email,
+      subject: "Application rejected",
+      html: rejectedEmail(displayName),
+    })
+  } catch (e) {
+    console.error("EMAIL ERROR (REJECTED):", e)
+  }
+}
 
     /* ========= ADMIN LOG ========= */
     await prisma.adminLog.create({

@@ -52,12 +52,14 @@ export default function HeroMapGlobal() {
   const [isMobile, setIsMobile] = useState(false)
   const [sequenceIndex, setSequenceIndex] = useState(0)
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener("resize", check)
-    return () => window.removeEventListener("resize", check)
-  }, [])
+  const [screenWidth, setScreenWidth] = useState(0)
+
+useEffect(() => {
+  const update = () => setScreenWidth(window.innerWidth)
+  update()
+  window.addEventListener("resize", update)
+  return () => window.removeEventListener("resize", update)
+}, [])
 
   const order = ["US", "BR", "EU", "NG", "ASIA", "AU"]
 
@@ -73,6 +75,20 @@ export default function HeroMapGlobal() {
   }, [hovered])
 
   const currentActive = hovered || order[sequenceIndex]
+
+  // helper for edge detection
+const getCardTransform = (left: number) => {
+  const isRightEdge = left > 82
+  const isLeftEdge = left < 18
+
+  if (isMobile) {
+    if (isRightEdge) return "translate(-105%, -115%)"
+    if (isLeftEdge) return "translate(5%, -115%)"
+    return "translate(-50%, -115%)"
+  }
+
+  return "translate(-50%, -115%)"
+}
 
   /* ===== POINTS ===== */
   const points = {
@@ -101,7 +117,57 @@ export default function HeroMapGlobal() {
     NG: { name: "Africa", creators: "900", share: "4%" },
   }
 
-  const scale = isMobile ? 1.05 : 1
+  const getScale = () => {
+  if (screenWidth < 360) return 0.88
+  if (screenWidth < 400) return 0.92
+  if (screenWidth < 480) return 0.96
+  if (screenWidth < 768) return 1
+  return 1.05
+}
+
+const scale = getScale()
+
+const getCardStyles = () => {
+  if (screenWidth < 360) {
+    return {
+      maxWidth: "70px",
+      padding: "4px 6px",
+      fontSize: "7.5px"
+    }
+  }
+
+  if (screenWidth < 400) {
+    return {
+      maxWidth: "78px",
+      padding: "5px 7px",
+      fontSize: "8px"
+    }
+  }
+
+  if (screenWidth < 480) {
+    return {
+      maxWidth: "85px",
+      padding: "6px 8px",
+      fontSize: "8.5px"
+    }
+  }
+
+  if (screenWidth < 768) {
+    return {
+      maxWidth: "95px",
+      padding: "6px 10px",
+      fontSize: "9px"
+    }
+  }
+
+  return {
+    maxWidth: "150px",
+    padding: "8px 12px",
+    fontSize: "12px"
+  }
+}
+
+
 
   return (
     <div className="relative flex justify-center items-center w-full overflow-hidden">
@@ -186,17 +252,20 @@ export default function HeroMapGlobal() {
             const top = (p.y / 500) * 100
 
             const isActive = currentActive === key
+            const cardStyle = getCardStyles()
 
             return (
               <motion.div
   key={key}
-  style={{
-    position: "absolute",
-    left: `${left}%`,
-    top: `${top}%`,
-    transform: "translate(-50%, -115%)", // 👈 فوق النقطة مباشرة
-    maxWidth: isMobile ? "85px" : "150px"
-  }}
+ style={{
+  position: "absolute",
+  left: `${left}%`,
+  top: `${top}%`,
+  transform: getCardTransform(left),
+  maxWidth: cardStyle.maxWidth,
+  padding: cardStyle.padding,
+  fontSize: cardStyle.fontSize
+}}
   initial={{ opacity: 0, scale: 0.85 }}
   animate={
     isActive
@@ -208,9 +277,14 @@ export default function HeroMapGlobal() {
     bg-white/95 backdrop-blur-xl
     shadow-md
     rounded-md border border-gray-100
-    ${isMobile ? "px-1.5 py-1 text-[8.5px]" : "px-3 py-2 text-xs"}
+    className="
+  bg-white/95 backdrop-blur-xl
+  shadow-md
+  rounded-md border border-gray-100
+"
   `}
 >
+  
   {/* ===== TITLE ===== */}
   <div className="font-semibold text-gray-900 leading-tight tracking-tight truncate">
     {d.name}

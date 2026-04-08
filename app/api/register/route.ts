@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { sendEmail } from "@/lib/email/sendEmail";
+import { welcomeEmail } from "@/lib/email/templates";
 
 export async function POST(req: Request) {
   try {
@@ -60,6 +62,18 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // 🔥 SEND WELCOME EMAIL
+try {
+   sendEmail({
+    to: user.email,
+    subject: "Welcome to VoxLinker 🚀",
+    html: welcomeEmail(user.name || "Creator"),
+  });
+} catch (e) {
+  console.error("Email failed (register)", e);
+}
+
 
     // تسجيل الدخول مباشرة ولكن بحالة PENDING
     const token = jwt.sign(

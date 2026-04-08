@@ -37,7 +37,7 @@ return(
 
   px-5 sm:px-8 md:px-10 xl:px-20
 
-  max-w-7xl mx-auto
+ max-w-7xl mx-auto md:pl-8 lg:pl-12 xl:pl-0
 
   grid grid-cols-1 md:grid-cols-2
 
@@ -71,10 +71,10 @@ bg-white opacity-50 blur-[120px]
 
 {/* ===== LEFT ===== */}
 <div className="
-relative z-10 max-w-xl
+relative z-10 max-w-[500px] lg:max-w-[520px]
 
 text-center md:text-left
-mx-auto md:mx-0
+mx-auto md:ml-0 md:mr-auto
 
 ">
 
