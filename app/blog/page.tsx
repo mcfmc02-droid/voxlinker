@@ -16,42 +16,75 @@ const [activeCategory,setActiveCategory] = useState<string | null>(null)
 const [search,setSearch] = useState("")
 const [dbPosts, setDbPosts] = useState<any[]>([])
 
+/* ===== FETCH ===== */
 useEffect(() => {
   fetch("/api/blog")
     .then(res => res.json())
     .then(data => {
-      if (data.length > 0) {
+      if (Array.isArray(data)) {
         setDbPosts(data)
       }
     })
 }, [])
 
+/* ===== SOURCE (دمج بدون تكرار) ===== */
+/* ===== SOURCE (دمج احترافي بدون فقدان بيانات) ===== */
+const source = useMemo(() => {
+  const map = new Map()
 
-/* ===== DATA ===== */
-
-/* Categories + Tags (من نفس المصدر) */
-const tags = useMemo(()=>{
-  const all = posts.map(p=>p.category)
-  return [...new Set(all)]
-},[])
-
-/* فلترة */
-const source = dbPosts.length > 0 ? dbPosts : posts
-
-const filteredPosts = useMemo(()=>{
-  return source.filter(p=>{
-    const matchCategory = activeCategory ? p.category === activeCategory : true
-    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase())
-    return matchCategory && matchSearch
+  // static أولاً
+  posts.forEach(post => {
+    map.set(post.slug, post)
   })
-},[activeCategory,search,source])
 
-/* Pagination */
-const visible = filteredPosts.slice(page*perPage,(page+1)*perPage)
+  // db يعوض إذا نفس slug
+  dbPosts.forEach(post => {
+    map.set(post.slug, post)
+  })
 
-/* Featured */
-const featured = filteredPosts.length > 0 ? filteredPosts[0] : posts[0]
+  return Array.from(map.values())
+}, [dbPosts])
 
+/* ===== FEATURED (ذكي + آمن) ===== */
+const featured = useMemo(() => {
+  return source.find(p => p.isFeatured) || source[0] || null
+}, [source])
+
+/* ===== TAGS (ديناميك) ===== */
+const tags = useMemo(()=>{
+  const all = source.map(p=>p.category)
+  return [...new Set(all)]
+},[source])
+
+/* ===== FILTER (بدون كسر الداتا) ===== */
+const filteredPosts = useMemo(()=>{
+  return source
+    .filter(p => p.slug !== featured?.slug) // ✅ بدل isFeatured
+    .filter(p=>{
+      const matchCategory = activeCategory
+        ? p.category === activeCategory
+        : true
+
+      const matchSearch = p.title.toLowerCase().includes(search.toLowerCase())
+
+      return matchCategory && matchSearch
+    })
+},[activeCategory,search,source,featured])
+
+/* ===== TOTAL PAGES (محمي) ===== */
+const totalPages = Math.max(1, Math.ceil(filteredPosts.length / perPage))
+
+/* ===== FIX PAGE OVERFLOW ===== */
+useEffect(() => {
+  if (page >= totalPages) {
+    setPage(0)
+  }
+}, [page, totalPages])
+
+/* ===== PAGINATION ===== */
+const visible = useMemo(()=>{
+  return filteredPosts.slice(page*perPage,(page+1)*perPage)
+},[filteredPosts,page])
 
 
 return(
@@ -170,25 +203,65 @@ Read More →
 
 {/* ===== PAGINATION ===== */}
 {filteredPosts.length > perPage && (
-<div className="flex justify-center gap-2 pt-8">
+  <div className="flex justify-center items-center gap-2 pt-10">
 
-<button
-onClick={()=>setPage(p=>p-1)}
-disabled={page===0}
-className="px-4 py-2 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50"
-> 
-Prev
-</button>
+    {/* ===== PREV ===== */}
+    <button
+      onClick={() => setPage((p) => p - 1)}
+      disabled={page === 0}
+      className="
+        px-4 py-2 rounded-lg text-sm font-medium
+        border border-gray-200
+        transition-all duration-200
+        hover:bg-gray-50
+        disabled:opacity-40 disabled:cursor-not-allowed
+        cursor-pointer
+      "
+    >
+      Prev
+    </button>
 
-<button
-onClick={()=>setPage(p=>p+1)}
-disabled={(page+1)*perPage>=filteredPosts.length}
-className="px-4 py-2 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50"
-> 
-Next
-</button>
+    {/* ===== PAGE NUMBERS ===== */}
+    {Array.from({
+      length: Math.ceil(filteredPosts.length / perPage),
+    }).map((_, i) => (
+      <button
+        key={i}
+        onClick={() => setPage(i)}
+        className={`
+          w-9 h-9 flex items-center justify-center
+          text-sm rounded-lg font-medium
+          transition-all duration-200
+          cursor-pointer
+          
+          ${
+            page === i
+              ? "bg-[#ff9a6c] text-white shadow-sm"
+              : "border border-gray-200 hover:bg-gray-50 text-gray-600"
+          }
+        `}
+      >
+        {i + 1}
+      </button>
+    ))}
 
-</div>
+    {/* ===== NEXT ===== */}
+    <button
+      onClick={() => setPage((p) => p + 1)}
+      disabled={(page + 1) * perPage >= filteredPosts.length}
+      className="
+        px-4 py-2 rounded-lg text-sm font-medium
+        border border-gray-200
+        transition-all duration-200
+        hover:bg-gray-50
+        disabled:opacity-40 disabled:cursor-not-allowed
+        cursor-pointer
+      "
+    >
+      Next
+    </button>
+
+  </div>
 )}
 
 </div>

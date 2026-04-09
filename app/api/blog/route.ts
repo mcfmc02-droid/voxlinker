@@ -7,7 +7,7 @@ export async function GET() {
     const posts = await prisma.blogPost.findMany({
       orderBy: { createdAt: "desc" },
 
-      take: 10, // 👈 limit (مهم)
+      
 
       select: {
         id: true,
