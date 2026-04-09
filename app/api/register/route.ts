@@ -65,11 +65,11 @@ export async function POST(req: Request) {
 
     // 🔥 SEND WELCOME EMAIL
 try {
-   sendEmail({
-    to: user.email,
-    subject: "Welcome to VoxLinker 🚀",
-    html: welcomeEmail(user.name || "Creator"),
-  });
+   await sendEmail({
+  to: "moncefachour191@gmail.com",
+  subject: "TEST EMAIL",
+  html: "<h1>TEST WORKING?</h1>",
+});
 } catch (e) {
   console.error("Email failed (register)", e);
 }

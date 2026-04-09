@@ -13,7 +13,7 @@ export async function sendEmail({
 }) {
   try {
     await resend.emails.send({
-      from: "VoxLinker <community@voxlinker.com>",
+      from: "VoxLinker <onboarding@resend.dev>",
       to,
       subject,
       html,
