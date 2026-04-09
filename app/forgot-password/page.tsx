@@ -1,6 +1,9 @@
 "use client";
 
+
 import { useState } from "react";
+import Link from "next/link";
+
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -30,7 +33,26 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fff7f3] px-6">
+      
+      
       <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full">
+
+<div className="text-center mb-8 sm:mb-10">
+  <div className="flex justify-center">
+    <Link href="/" className="flex items-center justify-center group">
+      <img
+        src="/logo.svg"
+        alt="VoxLinker"
+        className="
+          h-7 sm:h-8 md:h-9 lg:h-10
+          w-auto
+          transition duration-300
+          group-hover:scale-[1.05]
+        "
+      />
+    </Link>
+  </div>
+</div>
 
         <h2 className="text-xl font-semibold text-center mb-4">
           Reset your password
