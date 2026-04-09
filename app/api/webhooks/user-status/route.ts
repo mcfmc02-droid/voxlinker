@@ -13,18 +13,18 @@ export async function POST(req: Request) {
 
     if (status === "APPROVED") {
       await sendEmail({
-        to: email,
-        subject: "You're Approved 🎉",
-        html: approvedEmail(name),
-      })
+  to: "moncefachour191@gmail.com",
+  subject: "TEST EMAIL",
+  html: "<h1>TEST WORKING?</h1>",
+})
     }
 
     if (status === "REJECTED") {
       await sendEmail({
-        to: email,
-        subject: "Application Update",
-        html: rejectedEmail(name),
-      })
+  to: "moncefachour191@gmail.com",
+  subject: "TEST EMAIL",
+  html: "<h1>TEST WORKING?</h1>",
+})
     }
 
     return new Response("OK")
