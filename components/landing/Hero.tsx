@@ -9,23 +9,16 @@ export default function Hero(){
 
   const ref = useRef(null)
 
-const { scrollYProgress } = useScroll({
-  target: ref,
-  offset: ["start end", "end start"]
-})
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  })
 
-const baseScale = useTransform(
-  scrollYProgress,
-  [0, 0.5, 1],
-  [1.0, 1.2, 1.35]
-)
-
-// 👇 multiplier حسب الشاشة
-const scale = useTransform(
-  scrollYProgress,
-  [0, 0.5, 1],
-  [1.0, 1.2, 1.35]
-)
+  const scale = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1],
+    [1.0, 1.2, 1.35]
+  )
 
 return(
 
@@ -33,22 +26,18 @@ return(
   className="
   relative w-full
 
-  pt-14 sm:pt-10 md:pt-10 lg:pt-10 xl:pt-14 lg:mt-2 xl:mt-4
+  pt-14 sm:pt-12 md:pt-14 lg:pt-16 xl:pt-20
+  pb-2 sm:pb-4 md:pb-6
 
   px-5 sm:px-8 md:px-10 xl:px-20
 
- max-w-7xl mx-auto md:pl-8 lg:pl-12 xl:pl-0
+  max-w-7xl mx-auto
 
-  grid grid-cols-1 md:grid-cols-2
-
-  gap-12 md:gap-16 xl:gap-24
-
-  items-center
+  flex flex-col items-center   /* ✅ بدل grid */
 
   bg-white
   "
 >
-
 
 {/* ===== BACKGROUND GLOW ===== */}
 <div className="absolute inset-0 pointer-events-none">
@@ -69,53 +58,72 @@ bg-white opacity-50 blur-[120px]
 
 </div>
 
-{/* ===== LEFT ===== */}
-<div className="
-relative z-10 max-w-[500px] lg:max-w-[520px]
-
-text-center md:text-left
-mx-auto md:ml-0 md:mr-auto
-
-">
+{/* ===== CONTENT ===== */}
+<div className="relative z-10 text-center max-w-[720px] mx-auto">
 
 <h1 className="
-text-[28px] sm:text-[34px] md:text-[42px] lg:text-[50px] font-semibold leading-[1.3]
+text-[28px] sm:text-[34px] md:text-[42px] lg:text-[52px]
+font-semibold leading-[1.25]
+
 mb-5 md:mb-6
 ">
 
-Monetize content with smart  
-<span className="text-[#ff9a6c]"> Affiliate Links.</span>
+Every click has value. Turn it into measurable   
+<span className="text-[#ff9a6c]"> revenue.</span>
 </h1>
 
 
 <p className="
 text-gray-500
 
-text-[13.5px] sm:text-[15px] md:text-[16px]
+text-[14px] sm:text-[15px] md:text-[17px]
 
 leading-[1.7]
 tracking-[0.01em]
 
-mb-7 md:mb-10
-
-max-w-[90%] sm:max-w-[500px]
-
-mx-auto md:mx-0
-text-center md:text-left
+mb-8 md:mb-10
 ">
 
-Discover products your audience already loves, generate smart affiliate links,
-and track every click, conversion, and payout — all from one powerful platform
-built for modern creators.
+Discover products your audience already loves, generate intelligent affiliate links, 
+and track every click, conversion, and payout in real time — without complexity.
 
 </p>
 
+</div>
 
-<div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
+{/* ===== GLOBE ===== */}
+<div className="
+relative
+w-full
+flex justify-center items-center
+
+mt-2 md:mt-4
+
+min-h-[220px] sm:min-h-[260px] md:min-h-[420px] lg:min-h-[480px]
+">
+
+  <motion.div
+    ref={ref}
+    style={{ scale }}
+    className="
+    absolute
+    left-1/2 top-1/2
+    -translate-x-1/2 -translate-y-1/2
+
+    scale-[0.85] sm:scale-[0.9] md:scale-[1] lg:scale-[1.08] xl:scale-[1.15]
+    "
+  >
+    <HeroGlobe />
+  </motion.div>
+
+</div>
+
+{/* ===== CTA ===== */}
+<div className="mt-6 md:mt-8 flex justify-center">
 
 <Link href="/register" target="_blank">
 <button className="
-px-7 sm:px-8 py-3
+px-7 sm:px-9 py-3.5
 rounded-full
 font-semibold
 text-sm sm:text-base
@@ -123,14 +131,10 @@ text-sm sm:text-base
 text-white
 bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
 
-shadow-[0_8px_25px_rgba(255,154,108,0.35)]
+shadow-[0_10px_30px_rgba(255,154,108,0.35)]
 transition-all duration-300
 
-hover:bg-none
-hover:bg-white
-hover:text-[#ff9a6c]
-hover:shadow-[0_0_0_2px_rgba(255,154,108,0.5)]
-hover:scale-[1.04]
+hover:bg-none hover:bg-white hover:text-[#ff9a6c] hover:shadow-[0_0_0_2px_rgba(255,154,108,0.5)] hover:scale-[1.04]
 
 cursor-pointer
 ">
@@ -139,38 +143,6 @@ Start earning
 </Link>
 
 </div>
-
-</div>
-
-{/* ===== RIGHT (GLOBE) ===== */}
-<div className="
-relative
-w-full
-flex justify-center items-Start
-
-min-h-[250px] md:min-h-[450px]
-flex items-center
-">
-
-  <motion.div
-  ref={ref}
-  style={{ scale }}
-  className="
-  absolute
-  left-1/2 top-1/2
-  -translate-x-1/2 -translate-y-1/2
-
-  md:scale-[1.05]
-  lg:scale-[1.1]
-  xl:scale-[1.15]
-  "
->
-  <HeroGlobe />
-</motion.div>
-
-  </div>
-
-
 
 </section>
 
