@@ -148,13 +148,13 @@ shadow-xl
             />
 
             <div className="text-right text-sm">
-              <span
-                onClick={() => router.push("/forgot-password")}
-                className="text-[#ff9a6c] hover:underline cursor-pointer"
-              >
-                Forgot password?
-              </span>
-            </div>
+  <span
+    onClick={() => window.open("/forgot-password", "_blank")}
+    className="text-[#ff9a6c] hover:underline cursor-pointer"
+  >
+    Forgot password?
+  </span>
+</div>
 
             <button
               type="submit"

@@ -158,6 +158,8 @@ model User {
   creatorCampaigns       CreatorCampaign[]
   favorites              FavoriteBrand[]
   apiTokens              ApiToken[]
+  resetToken             String?
+  resetTokenExpiry  DateTime?
 
  adminLogs      AdminLog[] @relation("AdminActions")
 targetUserLogs AdminLog[] @relation("TargetUser")
