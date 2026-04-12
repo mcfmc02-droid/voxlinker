@@ -1,249 +1,289 @@
+import { buildAffiliateLink } from "@/lib/buildAffiliateLink"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { randomBytes } from "crypto"
 import { getUserFromSession } from "@/lib/auth"
 import * as cheerio from "cheerio"
+import { getSmartMetadata } from "@/lib/metadata"
+
 
 async function extractProductData(url: string) {
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9"
-      }
-    })
+try {
+const res = await fetch(url, {
+headers: {
+"User-Agent":
+"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+"Accept-Language": "en-US,en;q=0.9"
+}
+})
 
-    const html = await res.text()
-    const $ = cheerio.load(html)
+const html = await res.text()  
+const $ = cheerio.load(html)  
 
-    let title =
-  $('meta[property="og:title"]').attr("content") ||
-  $('meta[name="twitter:title"]').attr("content") ||
-  $('meta[name="title"]').attr("content") ||
-  $("title").text()
+let title =
+
+$('meta[property="og:title"]').attr("content") ||
+$('meta[name="twitter:title"]').attr("content") ||
+$('meta[name="title"]').attr("content") ||
+$("title").text()
 
 let imageUrl =
-  $('meta[property="og:image"]').attr("content") ||
-  $('meta[name="twitter:image"]').attr("content") ||
-  $('img').first().attr("src")
+$('meta[property="og:image"]').attr("content") ||
+$('meta[name="twitter:image"]').attr("content") ||
+$('img').first().attr("src")
 
-    // 🧠 fallback احترافي
-    const domain = new URL(url).hostname.replace("www.", "")
+// 🧠 fallback احترافي  
+const domain = new URL(url).hostname.replace("www.", "")
 
 if (!title || title.length < 5) {
-  // نحاول استخراج اسم المنتج من URL
-  const clean = url.split("/").pop()?.replace(/[-_]/g, " ")
-  title = clean || domain
+// نحاول استخراج اسم المنتج من URL
+const clean = url.split("/").pop()?.replace(/[-_]/g, " ")
+title = clean || domain
 }
 
 if (!imageUrl || !imageUrl.startsWith("http")) {
-  imageUrl = "/placeholder.png"
+imageUrl = "/placeholder.png"
 }
 
-    return {
-      title: title.trim(),
-      imageUrl
-    }
+return {  
+  title: title.trim(),  
+  imageUrl  
+}
 
-  } catch (err) {
-    console.error("EXTRACT ERROR:", err)
+} catch (err) {
+console.error("EXTRACT ERROR:", err)
 
-    return {
-      title: new URL(url).hostname,
-      imageUrl: "/placeholder.png"
-    }
-  }
+return {  
+  title: new URL(url).hostname,  
+  imageUrl: "/placeholder.png"  
+}
+
+}
 }
 
 function generateCode() {
-  return randomBytes(6).toString("base64url")
+return randomBytes(6).toString("base64url")
 }
 
 function extractDomain(url: string) {
-  try {
-    return new URL(url).hostname.replace("www.", "")
-  } catch {
-    return null
-  }
+try {
+return new URL(url).hostname.replace("www.", "")
+} catch {
+return null
+}
 }
 
 // 🔥 SMART SCRAPER (PRO LEVEL V1)
 async function scrapeMetadata(url: string) {
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 4000) // ⏱️ prevent slow sites
+try {
+const controller = new AbortController()
+const timeout = setTimeout(() => controller.abort(), 4000)
 
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      }
-    })
 
-    clearTimeout(timeout)
+// ⏱️ prevent slow sites
 
-    const html = await res.text()
+const res = await fetch(url, {  
+  signal: controller.signal,  
+  headers: {  
+    "User-Agent":  
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"  
+  }  
+})  
 
-    const getMeta = (name: string) => {
-      const regex = new RegExp(
-        `<meta[^>]+(?:property|name)=["']${name}["'][^>]+content=["']([^"]+)["']`,
-        "i"
-      )
-      return html.match(regex)?.[1] || null
-    }
+clearTimeout(timeout)  
 
-    // 🔥 OG first
-    let title = getMeta("og:title")
-    let image = getMeta("og:image")
+const html = await res.text()  
 
-    // 🔥 fallback title
-    if (!title) {
-      const titleMatch = html.match(/<title>(.*?)<\/title>/i)
-      title = titleMatch?.[1] || null
-    }
+const getMeta = (name: string) => {  
+  const regex = new RegExp(`  
+    <meta[^>]+(?:property|name)=["']
+      
+    ${name}["'][^>]+content=["']([^"]+)["'],  
+    "i"  
+  `)  
 
-    // 🔥 fallback image (basic)
-    if (!image) {
-      const imgMatch = html.match(/<img[^>]+src=["']([^"]+)["']/i)
-      image = imgMatch?.[1] || null
-    }
+  return html.match(regex)?.[1] || null  
+}  
 
-    return {
-      title,
-      image
-    }
-  } catch {
-    return {
-      title: null,
-      image: null
-    }
-  }
+// 🔥 OG first  
+let title = getMeta("og:title")  
+let image = getMeta("og:image")  
+
+// 🔥 fallback title  
+if (!title) {  
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i)  
+  title = titleMatch?.[1] || null  
+}  
+
+// 🔥 fallback image (basic)  
+if (!image) {  
+  const imgMatch = html.match(/<img[^>]+src=["']([^"]+)["']/i)  
+  image = imgMatch?.[1] || null  
+}  
+
+return {  
+  title,  
+  image  
+}
+
+} catch {
+return {
+title: null,
+image: null
+}
+}
 }
 
 export async function POST(req: Request) {
-  try {
-    // 🔐 Auth
-    const user = await getUserFromSession()
+try {
+// 🔐 Auth
+const user = await getUserFromSession()
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+if (!user) {  
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })  
+}  
 
-    // 📥 Body
-    const body = await req.json()
+// 📥 Body  
+const body = await req.json()  
 
-    const {
-      originalUrl,
-      sub1,
-      sub2,
-      sub3,
-      sub4,
-      sub5,
-      campaign
-    } = body
+const {  
+  originalUrl,  
+  sub1,  
+  sub2,  
+  sub3,  
+  sub4,  
+  sub5,  
+  campaign  
+} = body  
 
-    // ❌ Validation
-    if (!originalUrl) {
-      return NextResponse.json(
-        { error: "Product URL is required" },
-        { status: 400 }
-      )
-    }
+// ❌ Validation  
+if (!originalUrl) {  
+  return NextResponse.json(  
+    { error: "Product URL is required" },  
+    { status: 400 }  
+  )  
+}  
 
-    const domain = extractDomain(originalUrl)
+const domain = extractDomain(originalUrl)  
 
-    if (!domain) {
-      return NextResponse.json(
-        { error: "Invalid URL format" },
-        { status: 400 }
-      )
-    }
+if (!domain) {  
+  return NextResponse.json(  
+    { error: "Invalid URL format" },  
+    { status: 400 }  
+  )  
+}  
 
-    // 🔎 Find Offer
-    const offer = await prisma.offer.findFirst({
-      where: {
-        status: "ACTIVE",
-        brand: {
-          OR: [
-            {
-              websiteUrl: {
-                contains: domain
-              }
-            },
-            {
-              slug: {
-                equals: domain.split(".")[0]
-              }
-            }
-          ]
-        }
-      }
-    })
+// 🔎 Find Offer  
+const offer = await prisma.offer.findFirst({  
+  where: {  
+    status: "ACTIVE",  
+    brand: {  
+      OR: [  
+        {  
+          websiteUrl: {  
+            contains: domain  
+          }  
+        },  
+        {  
+          slug: {  
+            equals: domain.split(".")[0]  
+          }  
+        }  
+      ]  
+    }  
+  }  
+})  
 
-    if (!offer) {
-      return NextResponse.json(
-        { error: "Retailer not supported yet" },
-        { status: 400 }
-      )
-    }
+if (!offer) {  
+  return NextResponse.json(  
+    { error: "Retailer not supported yet" },  
+    { status: 400 }  
+  )  
+}  
 
-    // 🔁 Prevent duplicate
-    const existing = await prisma.affiliateLink.findFirst({
-      where: {
-        userId: user.id,
-        originalUrl,
-        isDeleted: false
-      }
-    })
+// 🔁 Prevent duplicate  
+const existing = await prisma.affiliateLink.findFirst({  
+  where: {  
+    userId: user.id,  
+    originalUrl,  
+    isDeleted: false  
+  }  
+})  
 
-    if (existing) {
-      return NextResponse.json({
-        success: true,
-        trackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
-      })
-    }
+if (existing) {  
+  return NextResponse.json({  
+    success: true,  
+    trackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`  
+  })  
+}  
 
-    // 🔥 SCRAPE (IMPORTANT)
-    const metadata = await scrapeMetadata(originalUrl)
+// 🔥 SMART METADATA (الجديد)
 
-    // 🧠 Extract product data
-    const { title, imageUrl } = await extractProductData(originalUrl)
+const smart = await getSmartMetadata(originalUrl)
 
-    // ✨ CREATE
-    const link = await prisma.affiliateLink.create({
-  data: {
-    code: generateCode(),
-    userId: user.id,
-    offerId: offer.id,
+// 🧠 fallback للنظام القديم (مهم جداً)
+let title = smart.title
+let imageUrl = smart.image
 
-    // 🔥 الرابط الذي يربح
-    originalUrl: offer.landingUrl,
+// 🔄 fallback إذا smart فشل
+if (!title || !imageUrl || imageUrl === "/placeholder.png") {
+  const fallback = await extractProductData(originalUrl)
 
-    title,
-    imageUrl,
+  title = title || fallback.title
 
-    campaignName: campaign || null,
-    sub1: sub1 || null,
-    sub2: sub2 || null,
-    sub3: sub3 || null,
-    sub4: sub4 || null,
-    sub5: sub5 || null
-  }
+  // 🧠 إذا الرابط بسيط (homepage) → logo
+const isSimpleUrl = originalUrl.split("/").length <= 4
+
+imageUrl =
+  imageUrl && imageUrl !== "/placeholder.png"
+    ? imageUrl
+    : isSimpleUrl
+      ? `https://logo.clearbit.com/${domain}`
+      : fallback.imageUrl
+}
+
+// 🔥 بناء رابط الافلييت (الجديد)  
+
+const affiliateUrl = buildAffiliateLink(originalUrl, offer)  
+
+
+
+// ✨ CREATE  
+const link = await prisma.affiliateLink.create({
+
+data: {
+code: generateCode(),
+userId: user.id,
+offerId: offer.id,
+
+// 🔥 الرابط الذي يربح  
+originalUrl: affiliateUrl,  
+
+title,  
+imageUrl,  
+
+campaignName: campaign || null,  
+sub1: sub1 || null,  
+sub2: sub2 || null,  
+sub3: sub3 || null,  
+sub4: sub4 || null,  
+sub5: sub5 || null
+
+}
 })
 
-    return NextResponse.json({
-      success: true,
-      trackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${link.code}`
-    })
+return NextResponse.json({  
+  success: true,  
+  trackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${link.code}`  
+})
 
-  } catch (error) {
-    console.error("CREATE LINK ERROR:", error)
+} catch (error) {
+console.error("CREATE LINK ERROR:", error)
 
-    return NextResponse.json(
-      { error: "Link creation failed" },
-      { status: 500 }
-    )
-  }
+return NextResponse.json(  
+  { error: "Link creation failed" },  
+  { status: 500 }  
+)
+
+}
 }

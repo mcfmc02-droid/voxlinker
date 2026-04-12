@@ -4,66 +4,67 @@ import { nanoid } from "nanoid"
 import { getUserFromSession } from "@/lib/auth"
 
 export async function POST(req: Request) {
-  const user = await getUserFromSession()
+const user = await getUserFromSession()
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+if (!user) {
+return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+}
 
-  const { brandId } = await req.json()
+const { brandId } = await req.json()
 
-  if (!brandId) {
-    return NextResponse.json(
-      { error: "brandId is required" },
-      { status: 400 }
-    )
-  }
+if (!brandId) {
+return NextResponse.json(
+{ error: "brandId is required" },
+{ status: 400 }
+)
+}
 
-  // 🔎 تحقق هل الرابط موجود مسبقاً
-  const existing = await prisma.affiliateLink.findFirst({
-    where: {
-      userId: user.id,
-      offer: {
-        brandId
-      }
-    }
-  })
-
-  if (existing) {
-    return NextResponse.json({
-      link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
-    })
-  }
-
-  // 🔥 نأخذ offer فعال فقط
-  const offer = await prisma.offer.findFirst({
-    where: {
-      brandId,
-      status: "ACTIVE"
-    }
-  })
-
-  if (!offer || !offer.landingUrl) {
-    return NextResponse.json(
-      { error: "No active offer available for this brand" },
-      { status: 400 }
-    )
-  }
-
-  // 🔥 إنشاء الرابط
-  const newLink = await prisma.affiliateLink.create({
-  data: {
-    code: nanoid(8),
-    userId: user.id,
-    offerId: offer.id,
-
-    // 🔥 هذا هو الإصلاح الأساسي
-    originalUrl: offer.landingUrl
-  }
+// 🔎 تحقق هل الرابط موجود مسبقاً
+const existing = await prisma.affiliateLink.findFirst({
+where: {
+userId: user.id,
+offer: {
+brandId
+}
+}
 })
 
-  // 🔥 إرجاع الرابط النهائي مباشرة
-  return NextResponse.json({
-    link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${newLink.code}`
-  })
+if (existing) {
+return NextResponse.json({
+link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
+})
+}
+
+// 🔥 نأخذ offer فعال فقط
+const offer = await prisma.offer.findFirst({
+where: {
+brandId,
+status: "ACTIVE"
+}
+})
+
+if (!offer || !offer.landingUrl) {
+return NextResponse.json(
+{ error: "No active offer available for this brand" },
+{ status: 400 }
+)
+}
+
+// 🔥 إنشاء الرابط
+const newLink = await prisma.affiliateLink.create({
+data: {
+code: nanoid(8),
+userId: user.id,
+offerId: offer.id,
+
+// 🔥 هذا هو الإصلاح الأساسي  
+originalUrl: offer.landingUrl
+
+}
+})
+
+// 🔥 إرجاع الرابط النهائي مباشرة
+return NextResponse.json({
+link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${newLink.code}`
+})
 }

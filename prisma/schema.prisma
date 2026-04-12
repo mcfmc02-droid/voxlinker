@@ -391,9 +391,10 @@ model Offer {
   name String
   description String?
 
-  landingUrl String?
-  logoUrl String?
+  landingUrl String?           // 🔥 رابط الأفلييت الأساسي
+  trackingTemplate String?     // 🔥 كيف نركب الرابط (IMPORTANT)
 
+  logoUrl String?
   domain String?
 
   status OfferStatus @default(ACTIVE)
@@ -401,9 +402,7 @@ model Offer {
   offerType OfferType
   commissionValue Float
 
-  // NEW
-  postbackSecret String?   // حماية postback
-
+  postbackSecret String?
   cookieDays Int @default(30)
 
   brandId Int
@@ -434,7 +433,8 @@ model AffiliateLink {
   // 🔗 LINK DATA
   originalUrl   String?   // deep link (product)
   finalUrl      String?   // optional (future use for rewritten links)
-
+  cleanUrl String?   // 🔥 (NEW) الرابط بدون tracking (اختياري)
+  slug String? @unique
   // 📊 TRACKING PARAMS (VERY IMPORTANT)
   campaignName  String?
   sub1          String?   // traffic source

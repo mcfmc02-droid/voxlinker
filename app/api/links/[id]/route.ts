@@ -13,16 +13,26 @@ export async function DELETE(
   }
 
   const { id } = await context.params
+  const linkId = Number(id)
+
+  if (isNaN(linkId)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
+  }
+
   const link = await prisma.affiliateLink.findUnique({
-    where: { id: Number(id) }
+    where: { id: linkId }
   })
 
   if (!link || link.userId !== user.id) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 })
   }
 
-  await prisma.affiliateLink.delete({
-    where: { id: Number(id) }
+  // 🔥 SOFT DELETE بدل الحذف النهائي
+  await prisma.affiliateLink.update({
+    where: { id: linkId },
+    data: {
+      isDeleted: true
+    }
   })
 
   return NextResponse.json({ success: true })

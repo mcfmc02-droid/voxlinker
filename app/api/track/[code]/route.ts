@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { code } = await context.params
 
-    // 🔎 جلب الرابط
+    // 🔎 GET LINK
     const affiliateLink = await prisma.affiliateLink.findUnique({
       where: { code },
       include: { offer: true },
@@ -48,34 +48,63 @@ export async function GET(
     // ===== CLICK ID =====
     const clickId = randomUUID()
 
-    // ===== REDIRECT URL (IMPORTANT FIX) =====
-    const redirectUrl = affiliateLink.originalUrl
+    // ===== REDIRECT URL (🔥 FINAL ONLY) =====
+    
+const redirectUrl =
+affiliateLink.finalUrl ||
+affiliateLink.offer?.landingUrl
 
-    if (!redirectUrl || !redirectUrl.startsWith("http")) {
-      console.error("Invalid redirect URL:", affiliateLink.id)
-      return NextResponse.redirect("https://google.com")
+if (!redirectUrl || !redirectUrl.startsWith("http")) {  
+  console.error("❌ Invalid redirect URL:", {  
+    id: affiliateLink.id,  
+    redirectUrl,  
+  })  
+  return NextResponse.redirect("https://google.com")  
+}
+
+    // 🧠 DEBUG
+    console.log("🔥 TRACK DEBUG:", {
+      code,
+      original: affiliateLink.originalUrl,
+      final: affiliateLink.finalUrl,
+      used: redirectUrl,
+    })
+
+    // ===== SAFE URL BUILD =====
+    let finalRedirectUrl: string
+
+    try {
+      const parsed = new URL(redirectUrl)
+
+      // 🟢 tracking param
+      parsed.searchParams.set("click_id", clickId)
+
+      if (sub1) parsed.searchParams.set("sub1", sub1)
+      if (sub2) parsed.searchParams.set("sub2", sub2)
+      if (sub3) parsed.searchParams.set("sub3", sub3)
+      if (sub4) parsed.searchParams.set("sub4", sub4)
+      if (sub5) parsed.searchParams.set("sub5", sub5)
+
+      // 🟡 لبعض الشبكات
+      if (affiliateLink.offer?.postbackSecret) {
+        parsed.searchParams.set("aff_sub", clickId)
+      }
+
+      finalRedirectUrl = parsed.toString()
+
+    } catch (err) {
+      console.warn("⚠️ URL parsing failed, fallback used")
+
+      // 🔥 fallback (مهم)
+      finalRedirectUrl = redirectUrl
     }
 
-    const finalUrl = new URL(redirectUrl)
+    // ===== REDIRECT FAST =====
+    const response = NextResponse.redirect(finalRedirectUrl)
 
-    // ===== PARAMS =====
-    finalUrl.searchParams.set("click_id", clickId)
-    finalUrl.searchParams.set("clickid", clickId)
-    finalUrl.searchParams.set("subid", clickId)
-    finalUrl.searchParams.set("aff_sub", clickId)
-
-    if (sub1) finalUrl.searchParams.set("sub1", sub1)
-    if (sub2) finalUrl.searchParams.set("sub2", sub2)
-    if (sub3) finalUrl.searchParams.set("sub3", sub3)
-    if (sub4) finalUrl.searchParams.set("sub4", sub4)
-    if (sub5) finalUrl.searchParams.set("sub5", sub5)
-
-    // 🔥 REDIRECT فوري
-    const response = NextResponse.redirect(finalUrl.toString())
-
-    // 🔥 TRACKING في الخلفية (فقط إذا user حقيقي)
+    // ===== BACKGROUND TRACKING =====
     if (shouldTrack) {
-      ;(async () => {
+      queueMicrotask(async () => {
         try {
           await bufferClick({
             clickId,
@@ -94,16 +123,15 @@ export async function GET(
 
           await trackClick(affiliateLink.offerId)
         } catch (e) {
-          console.log("Background tracking failed")
+          console.log("⚠️ Background tracking failed")
         }
-      })()
+      })
     }
 
     return response
 
   } catch (error) {
-    console.error("Tracking error:", error)
-
+    console.error("❌ Tracking error:", error)
     return NextResponse.redirect("https://google.com")
   }
 }

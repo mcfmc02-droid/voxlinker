@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { buildAffiliateLink } from "@/lib/buildAffiliateLink"
 import { getUserFromSession } from "@/lib/auth"
 import { randomUUID } from "crypto"
 
 /* ===== DOMAIN NORMALIZER ===== */
+
 function normalizeDomain(url: string) {
   try {
     const parsed = new URL(url)
@@ -45,6 +47,7 @@ export async function POST(req: Request) {
   }
 
   /* ===== FIND BRAND (SMART MATCH) ===== */
+
   const brand = await prisma.brand.findFirst({
     where: {
       OR: [
@@ -69,11 +72,15 @@ export async function POST(req: Request) {
 
   const offer = brand.offers[0]
 
+  const affiliateUrl = buildAffiliateLink(url, offer)
+
   /* ===== CHECK EXISTING LINK (CACHE) ===== */
+
   const existingLink = await prisma.affiliateLink.findFirst({
     where: {
       userId: user.id,
       originalUrl: url,
+      finalUrl: affiliateUrl,
     },
   })
 
@@ -83,15 +90,25 @@ export async function POST(req: Request) {
     })
   }
 
+  
+
+  
+
   /* ===== CREATE NEW LINK ===== */
+  
   const affiliateLink = await prisma.affiliateLink.create({
-    data: {
-      code: randomUUID(),
-      userId: user.id,
-      offerId: offer.id,
-      originalUrl: url,
-    },
-  })
+  data: {
+    code: randomUUID(),
+    userId: user.id,
+    offerId: offer.id,
+
+    // ✅ الرابط الأصلي
+    originalUrl: url,
+
+    // ✅ الرابط المربح
+    finalUrl: affiliateUrl,
+  },
+})
 
   return NextResponse.json({
     link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${affiliateLink.code}`,

@@ -5,14 +5,32 @@ const baseTemplate = (content: string) => `
 
   <div style="max-width:560px;margin:auto;background:white;border-radius:14px;padding:32px 28px">
 
-    <!-- LOGO (محسن) -->
     <div style="text-align:center;margin-bottom:28px">
-      <img 
-        src="https://voxlinker.com/logo.svg" 
-        width="140" 
-        style="display:block;margin:auto"
-      />
-    </div>
+
+  <!-- Light Logo -->
+  <img 
+    src="https://voxlinker.com/logo.svg" 
+    width="140" 
+    style="display:block;margin:auto" 
+    class="light-logo"
+  />
+
+  <!-- Dark Logo -->
+  <img 
+    src="https://voxlinker.com/logo-dark.svg" 
+    width="140" 
+    style="display:none;margin:auto" 
+    class="dark-logo"
+  />
+
+</div>
+
+<style>
+@media (prefers-color-scheme: dark) {
+  .light-logo { display: none !important; }
+  .dark-logo { display: block !important; }
+}
+</style>
 
     <!-- CONTENT -->
     ${content}
@@ -90,10 +108,12 @@ export function welcomeEmail(name: string) {
       You’ll receive another email as soon as your account is approved.
     </p>
 
-    <p style="color:#666;font-size:14px;margin-top:20px">
-      Best regards,<br/>
-      <strong>The VoxLinker Team</strong>
-    </p>
+    <p style="color:#666;font-size:14px;margin-top:24px;line-height:1.8">
+  Best regards,<br/>
+  <strong style="display:inline-block;margin-top:6px;letter-spacing:0.3px">
+    The VoxLinker Team
+  </strong>
+</p>
 
   `)
 }
@@ -139,10 +159,12 @@ export function approvedEmail(name: string) {
       If you need help getting started, our team is always here to support you.
     </p>
 
-    <p style="color:#666;font-size:14px;margin-top:20px">
-      Best regards,<br/>
-      <strong>The VoxLinker Team</strong>
-    </p>
+    <p style="color:#666;font-size:14px;margin-top:24px;line-height:1.8">
+  Best regards,<br/>
+  <strong style="display:inline-block;margin-top:6px;letter-spacing:0.3px">
+    The VoxLinker Team
+  </strong>
+</p>
 
   `)
 }
@@ -176,10 +198,12 @@ export function rejectedEmail(name: string) {
       We appreciate your understanding.
     </p>
 
-    <p style="color:#666;font-size:14px;margin-top:20px">
-      Best regards,<br/>
-      <strong>The VoxLinker Team</strong>
-    </p>
+    <p style="color:#666;font-size:14px;margin-top:24px;line-height:1.8">
+  Best regards,<br/>
+  <strong style="display:inline-block;margin-top:6px;letter-spacing:0.3px">
+    The VoxLinker Team
+  </strong>
+</p>
 
   `)
 }

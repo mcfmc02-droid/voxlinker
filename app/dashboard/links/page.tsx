@@ -2,7 +2,19 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { link } from "fs/promises"
+
+
+
+
+function formatDate(date: string | null) {
+  if (!date) return "—"
+
+  const d = new Date(date)
+
+  if (isNaN(d.getTime())) return "—"
+
+  return d.toLocaleDateString()
+}
 
 export default function LinksPage() {
 
@@ -11,6 +23,7 @@ export default function LinksPage() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [journal, setJournal] = useState<any[]>([])
+  const [allLinks, setAllLinks] = useState<any[]>([])
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [sub1, setSub1] = useState("")
   const [sub2, setSub2] = useState("")
@@ -19,15 +32,18 @@ export default function LinksPage() {
   const [copiedMain, setCopiedMain] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  // تحميل Journal
-  useEffect(() => {
+// تحميل Journal
+
+useEffect(() => {
   fetch("/api/links/my-links")
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data)) {
-        setJournal(data)
+        setJournal(data)   // 👈 للعرض
+        setAllLinks(data)  // 👈 النسخة الأصلية (مهم جداً)
       } else {
         setJournal([])
+        setAllLinks([])
         console.error("Invalid journal data:", data)
       }
     })
@@ -80,6 +96,7 @@ export default function LinksPage() {
     setTimeout(() => setCopiedId(null), 1500)
   }
 
+  
 
 
   return (
@@ -230,12 +247,14 @@ gap-4">
       placeholder="Search links..."
       className="bg-gray-100 px-4 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ff9a6c]/40 transition"
       onChange={(e) => {
-        const value = e.target.value.toLowerCase()
-        const filtered = journal.filter((l) =>
-          l.originalUrl.toLowerCase().includes(value)
-        )
-        setJournal(filtered)
-      }}
+      const value = e.target.value.toLowerCase()
+
+        const filtered = allLinks.filter((l) =>
+        l.originalUrl.toLowerCase().includes(value)
+  )
+
+  setJournal(filtered)
+}}
     />
 
   </div>
@@ -250,7 +269,7 @@ gap-4">
 
     {journal.map((link, index) => {
 
-  const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${link.code}`
+const fullLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${link.code}`
 
   const shortUrl = (() => {
     try {
@@ -295,8 +314,8 @@ flex-1
   <img
   src={link.imageUrl || "/placeholder.png"}
   className="
-    w-full sm:w-20 lg:w-16
-    h-40 sm:h-20 lg:h-16
+    w-full sm:w-20 lg:w-24
+    h-40 sm:h-20 lg:h-24
 
     rounded-xl
     object-cover
@@ -304,11 +323,10 @@ flex-1
 
     flex-shrink-0
   "
-
-    onError={(e) => {
-      e.currentTarget.src = "/placeholder.png"
-    }}
-  />
+  onError={(e) => {
+    e.currentTarget.src = "/placeholder.png"
+  }}
+/>
 
   {/* TEXT */}
   <div className="
@@ -359,9 +377,8 @@ max-w-[240px] xl:max-w-full
 
             <div className="flex flex-wrap gap-6 text-xs text-gray-400 mt-1">
 
-  <span>{link.clicks.length} clicks</span>
-
-  <span>{link.conversionsCount} approved</span>
+  <span>{link.clicksCount ?? 0} clicks</span>
+  <span>{link.conversionsCount ?? 0} approved</span>
 
   <span className="text-green-600 font-medium">
     ${link.approvedEarnings.toFixed(2)} approved
@@ -376,7 +393,7 @@ max-w-[240px] xl:max-w-full
   </span>
 
   <span>
-    {new Date(link.createdAt).toLocaleDateString()}
+    {formatDate(link.createdAt)}
   </span>
 
 </div>
@@ -400,7 +417,7 @@ transition
   onClick={() => copyLink(fullLink, link.id)}
   className="
 w-full xl:w-auto
-px-6 py-3
+px-6 py-3 lg:px-4 lg:py-2
 
 text-sm font-medium
 
@@ -432,12 +449,18 @@ cursor-pointer
   }}
   className="
 w-full xl:w-auto
-px-6 py-3
+px-6 py-3 lg:px-4 lg:py-2
+
 text-sm font-medium
+
 rounded-xl
+
 bg-white text-black border border-gray-300
+
 transition-all duration-200
+
 hover:bg-black hover:text-white hover:border-black
+
 cursor-pointer
 "
 >
