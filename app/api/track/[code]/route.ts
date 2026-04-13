@@ -48,19 +48,19 @@ export async function GET(
     // ===== CLICK ID =====
     const clickId = randomUUID()
 
-    // ===== REDIRECT URL (🔥 FINAL ONLY) =====
-    
-const redirectUrl =
-affiliateLink.finalUrl ||
-affiliateLink.offer?.landingUrl
+    // ===== REDIRECT URL (🔥 FIXED) =====
+    const redirectUrl =
+      affiliateLink.finalUrl ||
+      affiliateLink.originalUrl ||
+      affiliateLink.offer?.landingUrl
 
-if (!redirectUrl || !redirectUrl.startsWith("http")) {  
-  console.error("❌ Invalid redirect URL:", {  
-    id: affiliateLink.id,  
-    redirectUrl,  
-  })  
-  return NextResponse.redirect("https://google.com")  
-}
+    if (!redirectUrl || !redirectUrl.startsWith("http")) {
+      console.error("❌ Invalid redirect URL:", {
+        id: affiliateLink.id,
+        redirectUrl,
+      })
+      return NextResponse.redirect("https://google.com")
+    }
 
     // 🧠 DEBUG
     console.log("🔥 TRACK DEBUG:", {
@@ -70,13 +70,13 @@ if (!redirectUrl || !redirectUrl.startsWith("http")) {
       used: redirectUrl,
     })
 
-    // ===== SAFE URL BUILD =====
+    // ===== BUILD FINAL URL =====
     let finalRedirectUrl: string
 
     try {
       const parsed = new URL(redirectUrl)
 
-      // 🟢 tracking param
+      // 🔥 CLICK ID (IMPORTANT)
       parsed.searchParams.set("click_id", clickId)
 
       if (sub1) parsed.searchParams.set("sub1", sub1)
@@ -94,38 +94,50 @@ if (!redirectUrl || !redirectUrl.startsWith("http")) {
 
     } catch (err) {
       console.warn("⚠️ URL parsing failed, fallback used")
-
-      // 🔥 fallback (مهم)
       finalRedirectUrl = redirectUrl
     }
 
     // ===== REDIRECT FAST =====
     const response = NextResponse.redirect(finalRedirectUrl)
 
-    // ===== BACKGROUND TRACKING =====
+    // ===== BACKGROUND TRACKING (🔥 FIXED) =====
     if (shouldTrack) {
-      queueMicrotask(async () => {
+      setTimeout(async () => {
         try {
           await bufferClick({
             clickId,
             affiliateLinkId: affiliateLink.id,
             offerId: affiliateLink.offerId,
             userId: affiliateLink.userId,
+
             ipAddress: ip,
             userAgent,
             referrer,
+
             sub1,
             sub2,
             sub3,
             sub4,
             sub5,
+
+            // 🔥 FRAUD DATA
+            isBot,
+            isDuplicate: isSpam,
+            fraudScore: isBot || isSpam ? 1 : 0,
           })
 
           await trackClick(affiliateLink.offerId)
+
+          console.log("✅ CLICK TRACKED:", {
+            clickId,
+            userId: affiliateLink.userId,
+            offerId: affiliateLink.offerId,
+          })
+
         } catch (e) {
           console.log("⚠️ Background tracking failed")
         }
-      })
+      }, 0)
     }
 
     return response

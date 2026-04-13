@@ -65,7 +65,7 @@ export default function CreatorsPage() {
 
         <h1 className="
         text-[32px] sm:text-[42px] md:text-[52px] lg:text-[60px]
-        font-semibold
+        font-medium
         leading-[1.2]
         mb-6
         ">
@@ -111,7 +111,7 @@ transition-all duration-300 ease-out cursor-pointer
 
         <div className="max-w-6xl mx-auto text-center mb-12">
 
-          <h2 className="text-[28px] md:text-[34px] font-semibold mb-3">
+          <h2 className="text-[28px] md:text-[34px] font-medium mb-3">
             How It Works
           </h2>
 
@@ -228,7 +228,7 @@ transition-all duration-300 ease-out cursor-pointer
 
         <div className="max-w-5xl mx-auto text-center">
 
-          <h2 className="text-[26px] md:text-[32px] font-semibold mb-4">
+          <h2 className="text-[26px] md:text-[32px] font-medium mb-4">
             Trusted by Growing Creators
           </h2>
 

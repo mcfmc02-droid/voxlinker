@@ -46,33 +46,40 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: firstName + " " + lastName,
-        role: "AFFILIATE",
-        status: "PENDING",
+  data: {
+    email,
+    password: hashedPassword,
+    name: firstName + " " + lastName,
+    role: "AFFILIATE",
+    status: "PENDING",
 
-        wallet: {
-          create: {
-            availableBalance: 0,
-            pendingBalance: 0,
-            totalEarned: 0,
-          },
-        },
+    // ✅ أضف هذه
+    country,
+    phone,
+    address,
+    stateRegion,
+    city,
+    trafficSource,
+    trafficUrl,
+
+    wallet: {
+      create: {
+        availableBalance: 0,
+        pendingBalance: 0,
+        totalEarned: 0,
       },
-    });
-
-    // 🔥 SEND WELCOME EMAIL
-try {
-   await sendEmail({
-  to: "moncefachour191@gmail.com",
-  subject: "TEST EMAIL",
-  html: "<h1>TEST WORKING?</h1>",
+    },
+  },
 });
-} catch (e) {
-  console.error("Email failed (register)", e);
-}
+
+    // 🧠 إرسال في الخلفية بدون تعطيل التسجيل
+sendEmail({
+  to: user.email,
+  subject: "Welcome to VoxLinker",
+  html: welcomeEmail(user.name || "Creator"),
+}).catch(err => {
+  console.error("WELCOME EMAIL FAILED:", err)
+})
 
 
     // تسجيل الدخول مباشرة ولكن بحالة PENDING

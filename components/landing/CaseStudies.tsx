@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import Link from "next/link"
 
 const data = [
   {
@@ -10,6 +11,7 @@ const data = [
     description:
       "Discover modern strategies top creators use to turn content into consistent, scalable income streams.",
     image: "/images/sample1.jpg",
+    slug: "/blog/scale-affiliate-revenue-2025", // 👈 جديد
   },
   {
     brand: "STRATEGY",
@@ -17,6 +19,7 @@ const data = [
     description:
       "Step-by-step framework to grow faster using performance data, product selection, and trust-based content.",
     image: "/images/sample2.jpg",
+    slug: "/blog/creator-growth-strategy", // 👈
   },
   {
     brand: "INSIGHTS",
@@ -24,6 +27,7 @@ const data = [
     description:
       "What actually works now — from content formats to product positioning and conversion triggers.",
     image: "/images/sample3.jpg",
+    slug: "/blog/top-converting-affiliate-strategies", // 👈
   },
 ]
 
@@ -123,20 +127,24 @@ export default function FeaturedArticles() {
               {data[index].description}
             </p>
 
-            <button className="
-              mt-6 px-6 py-2.5 rounded-full
-              text-sm font-medium
+            <Link
+  href={data[index].slug}
+  className="
+    inline-block
+    mt-6 px-6 py-2.5 rounded-full
+    text-sm font-medium
 
-              text-white
-              bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
+    text-white
+    bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
 
-              shadow-md
-              hover:scale-[1.05]
-              hover:shadow-lg
-              transition cursor-pointer
-            ">
-              Read article
-            </button>
+    shadow-md
+    hover:scale-[1.05]
+    hover:shadow-lg
+    transition
+  "
+>
+  Read article
+</Link>
 
           </div>
 

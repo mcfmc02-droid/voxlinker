@@ -58,7 +58,7 @@ export default function FeaturesPage() {
 
         <h1 className="
         text-[32px] sm:text-[40px] md:text-[48px] lg:text-[56px]
-        font-semibold
+        font-medium
         leading-[1.2]
         mb-6
         ">
@@ -157,7 +157,7 @@ export default function FeaturesPage() {
 
           <h2 className="
           text-[26px] md:text-[34px]
-          font-semibold
+          font-medium
           mb-4
           ">
             Built for Creators Who Want More

@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import Navbar from "@/components/landing/Navbar"
+import Footer from "@/components/landing/Footer"
 
 import {
   PageTitle,
@@ -53,12 +55,23 @@ const handleSubmit = async (e:any)=>{
 
 return(
 
+<div className="bg-white">
+
+  {/* ===== NAVBAR ===== */}
+  <Navbar />
+
 <div className="min-h-screen bg-[#fafaf8] px-6 py-20">
+
+
 
 <div className="max-w-6xl mx-auto">
 
+
+
 {/* ===== HERO ===== */}
 <div className="text-center mb-16">
+
+
 
 <PageTitle>
 Contact VoxLinker
@@ -199,7 +212,7 @@ w-full py-3 rounded-xl font-semibold
 bg-black text-white
 hover:opacity-90
 transition
-flex items-center justify-center gap-2
+flex items-center justify-center gap-2 cursor-pointer
 "
 > 
 {loading ? "Sending..." : "Send Message"}
@@ -267,6 +280,13 @@ Our team is dedicated to helping you grow faster with VoxLinker.
 </div>
 
 </div>
+
+
+
+</div>
+
+{/* ===== FOOTER ===== */}
+<Footer />
 
 </div>
 )

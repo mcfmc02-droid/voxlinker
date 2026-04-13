@@ -25,15 +25,16 @@ return(
 
 <div className="md:col-span-2">
 
-<Link href="/" className="mb-5 block">
-
-<img
-src="/logodark.svg"
-alt="VoxLinker"
-className="h-10 md:h-12 w-auto"
-/>
-
-</Link>
+<button
+  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+  className="mb-5 block cursor-pointer"
+>
+  <img
+    src="/logo-dark.svg"
+    alt="VoxLinker"
+    className="h-10 md:h-12 w-auto"
+  />
+</button>
 
 <p className="text-gray-400 max-w-sm leading-relaxed">
 

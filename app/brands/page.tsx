@@ -57,7 +57,7 @@ export default function BrandsPage() {
 
         <h1 className="
         text-[32px] sm:text-[42px] md:text-[52px] lg:text-[60px]
-        font-semibold
+        font-medium
         leading-[1.2]
         mb-6
         ">
@@ -204,7 +204,7 @@ export default function BrandsPage() {
         p-12
         ">
 
-          <h2 className="text-[26px] md:text-[34px] font-semibold mb-4">
+          <h2 className="text-[26px] md:text-[34px] font-medium mb-4">
             Launch Your Affiliate Growth Engine
           </h2>
 

@@ -6,6 +6,10 @@ import { getUserFromSession } from "@/lib/auth"
 import * as cheerio from "cheerio"
 import { getSmartMetadata } from "@/lib/metadata"
 
+function getAmazonASIN(url: string) {
+  const match = url.match(/\/dp\/([A-Z0-9]{10})/)
+  return match ? match[1] : null
+}
 
 async function extractProductData(url: string) {
 try {
@@ -41,8 +45,16 @@ const clean = url.split("/").pop()?.replace(/[-_]/g, " ")
 title = clean || domain
 }
 
+const asin = getAmazonASIN(url)
+
 if (!imageUrl || !imageUrl.startsWith("http")) {
-imageUrl = "/placeholder.png"
+
+  if (domain.includes("amazon.") && asin) {
+    imageUrl = `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`
+  } else {
+    imageUrl = "/placeholder.png"
+  }
+
 }
 
 return {  
@@ -256,8 +268,8 @@ code: generateCode(),
 userId: user.id,
 offerId: offer.id,
 
-// 🔥 الرابط الذي يربح  
-originalUrl: affiliateUrl,  
+originalUrl: originalUrl,  // 🔥 الرابط الحقيقي
+finalUrl: affiliateUrl,     // 🔥 رابط الربح  
 
 title,  
 imageUrl,  

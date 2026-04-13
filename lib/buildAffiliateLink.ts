@@ -6,13 +6,21 @@ export function buildAffiliateLink(originalUrl: string, offer: any) {
 
     // 🟢 AMAZON
     if (domain.includes("amazon.")) {
-      const asinMatch = originalUrl.match(/\/dp\/([A-Z0-9]{10})/)
-      const asin = asinMatch ? asinMatch[1] : null
 
-      if (asin) {
-        return `https://www.amazon.com/dp/${asin}?tag=voxlinker-20`
-      }
-    }
+  const asinMatch =
+    originalUrl.match(/\/dp\/([A-Z0-9]{10})/) ||
+    originalUrl.match(/\/gp\/product\/([A-Z0-9]{10})/) ||
+    originalUrl.match(/\/product\/([A-Z0-9]{10})/)
+
+  const asin = asinMatch ? asinMatch[1] : null
+
+  if (asin) {
+    return `https://www.amazon.com/dp/${asin}?tag=voxlinker-20`
+  }
+
+  // 🔥 fallback ذكي
+  return originalUrl
+}
 
     // 🟡 WALMART (مستقبلاً)
     if (domain.includes("walmart.com")) {
