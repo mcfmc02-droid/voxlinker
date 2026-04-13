@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       stateRegion,
       city,
       trafficSource,
-      trafficUrl,
+      trafficSourceUrl,
     } = body;
 
     if (!email || !password) {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     stateRegion,
     city,
     trafficSource,
-    trafficUrl,
+    trafficSourceUrl,
 
     wallet: {
       create: {
