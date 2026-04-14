@@ -12,22 +12,18 @@ export async function GET(req: Request) {
     const token = url.searchParams.get("token")
     const statusParam = url.searchParams.get("status")
 
-    // ===== VALIDATION =====
-    if (!clickId) {
-      return NextResponse.json({ error: "click_id required" }, { status: 400 })
-    }
-
-    if (!orderId) {
-      return NextResponse.json({ error: "order_id required" }, { status: 400 })
+    // =========================
+    // ❌ VALIDATION
+    // =========================
+    if (!clickId || !orderId) {
+      return NextResponse.json({ error: "missing params" }, { status: 400 })
     }
 
     const amount = amountParam ? parseFloat(amountParam) : 0
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "invalid amount" }, { status: 400 })
-    }
-
-    // ===== GET CLICK =====
+    // =========================
+    // 🔎 GET CLICK
+    // =========================
     const click = await prisma.click.findUnique({
       where: { clickId },
       include: {
@@ -40,59 +36,30 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "click not found" }, { status: 404 })
     }
 
-    // ===== SECURITY =====
+    // =========================
+    // 🔐 SECURITY
+    // =========================
     if (click.offer.postbackSecret) {
-      if (!token || token !== click.offer.postbackSecret) {
+      if (token !== click.offer.postbackSecret) {
         return NextResponse.json({ error: "invalid token" }, { status: 403 })
       }
     }
 
-    // ===== DUPLICATE CHECK =====
-    const existingOrder = await prisma.conversion.findUnique({
-      where: { orderId }
-    })
-
-    if (existingOrder) {
-      return NextResponse.json({ status: "duplicate" })
-    }
-
-    const existingClick = await prisma.conversion.findFirst({
-      where: { clickId }
-    })
-
-    if (existingClick) {
-      return NextResponse.json({ status: "already converted" })
-    }
-
-    // ===== STATUS MAPPING =====
+    // =========================
+    // 🧠 STATUS
+    // =========================
     let status: "APPROVED" | "PENDING" | "REJECTED" = "PENDING"
 
     if (statusParam) {
-      const normalized = statusParam.toLowerCase()
+      const s = statusParam.toLowerCase()
 
-      if (normalized === "approved" || normalized === "sale") {
-        status = "APPROVED"
-      }
-
-      if (normalized === "rejected" || normalized === "declined") {
-        status = "REJECTED"
-      }
+      if (["approved", "sale", "confirmed"].includes(s)) status = "APPROVED"
+      if (["rejected", "declined", "failed"].includes(s)) status = "REJECTED"
     }
 
-    // ===== LOG POSTBACK =====
-    await prisma.postbackLog.create({
-      data: {
-        clickId,
-        orderId,
-        ip:
-          req.headers.get("x-forwarded-for")?.split(",")[0] ||
-          req.headers.get("x-real-ip") ||
-          null,
-        status: "SUCCESS"
-      }
-    })
-
-    // ===== COMMISSION =====
+    // =========================
+    // 💰 COMMISSION
+    // =========================
     let commission = 0
 
     if (click.offer.offerType === "CPA") {
@@ -106,44 +73,170 @@ export async function GET(req: Request) {
     if (click.offer.offerType === "HYBRID") {
       commission =
         click.offer.commissionValue +
-        (amount * 0.05) // قابل للتطوير
+        (amount * 0.05)
     }
 
-    // ===== CREATE CONVERSION =====
-    const conversion = await prisma.conversion.create({
-      data: {
-        clickId,
-        clickDbId: click.id,
-        affiliateLinkId: click.affiliateLinkId,
-        offerId: click.offerId,
-        userId: click.userId,
+    // =========================
+    // 🔥 DATABASE TRANSACTION
+    // =========================
+    const conversion = await prisma.$transaction(async (tx) => {
 
-        orderId,
-        revenue: amount,
-        commission,
-        status
+      const existing = await tx.conversion.findUnique({
+        where: { orderId }
+      })
+
+      // 🧠 wallet لازم يكون موجود
+      let wallet = await tx.wallet.findUnique({
+        where: { userId: click.userId }
+      })
+
+      if (!wallet) {
+        wallet = await tx.wallet.create({
+          data: {
+            userId: click.userId,
+            availableBalance: 0,
+            totalEarned: 0,
+          }
+        })
       }
+
+      // =========================
+      // 🔁 UPDATE CASE
+      // =========================
+      if (existing) {
+
+        const wasApproved = existing.status === "APPROVED"
+        const isNowApproved = status === "APPROVED"
+
+        const updated = await tx.conversion.update({
+          where: { orderId },
+          data: {
+            status,
+            revenue: amount,
+            commission
+          }
+        })
+
+        // 💰 add money
+        if (!wasApproved && isNowApproved) {
+          await tx.wallet.update({
+            where: { id: wallet.id },
+            data: {
+              availableBalance: { increment: commission },
+              totalEarned: { increment: commission }
+            }
+          })
+
+          await tx.transaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: commission,
+              type: "COMMISSION",
+              status: "APPROVED",
+              description: `Order ${orderId}`
+            }
+          })
+        }
+
+        // 🔥 refund
+        if (wasApproved && status === "REJECTED") {
+          await tx.wallet.update({
+            where: { id: wallet.id },
+            data: {
+              availableBalance: { decrement: existing.commission || 0 }
+            }
+          })
+
+          await tx.transaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: -(existing.commission || 0),
+              type: "REFUND",
+              status: "APPROVED",
+              description: `Refund order ${orderId}`
+            }
+          })
+        }
+
+        // 📜 log
+        await tx.postbackLog.create({
+          data: {
+            clickId,
+            orderId,
+            ip:
+              req.headers.get("x-forwarded-for")?.split(",")[0] ||
+              req.headers.get("x-real-ip") ||
+              null,
+            status: "SUCCESS"
+          }
+        })
+
+        return updated
+      }
+
+      // =========================
+      // 🆕 CREATE CASE
+      // =========================
+      const created = await tx.conversion.create({
+        data: {
+          clickId,
+          clickDbId: click.id,
+          affiliateLinkId: click.affiliateLinkId,
+          offerId: click.offerId,
+          userId: click.userId,
+          orderId,
+          revenue: amount,
+          commission,
+          status
+        }
+      })
+
+      // 💰 wallet update
+      if (status === "APPROVED") {
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            availableBalance: { increment: commission },
+            totalEarned: { increment: commission }
+          }
+        })
+      }
+
+      // 🧾 transaction log
+      await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          amount: status === "APPROVED" ? commission : 0,
+          type: "COMMISSION",
+          status: status === "APPROVED" ? "APPROVED" : "PENDING",
+          description: `Order ${orderId}`
+        }
+      })
+
+      // 📜 log
+      await tx.postbackLog.create({
+        data: {
+          clickId,
+          orderId,
+          ip:
+            req.headers.get("x-forwarded-for")?.split(",")[0] ||
+            req.headers.get("x-real-ip") ||
+            null,
+          status: "SUCCESS"
+        }
+      })
+
+      return created
     })
 
-    // ===== ANALYTICS =====
+    // =========================
+    // 📊 ANALYTICS
+    // =========================
     await trackConversion(click.offerId, amount, commission)
 
-    // ===== WALLET (only approved) =====
-    if (status === "APPROVED") {
-      await prisma.wallet.upsert({
-        where: { userId: click.userId },
-        update: {
-        availableBalance: { increment: commission },
-        totalEarned: { increment: commission }
-      },
-      create: {
-        userId: click.userId,
-        availableBalance: commission,
-        totalEarned: commission
-      }
-    })
-    }
-
+    // =========================
+    // ✅ RESPONSE
+    // =========================
     return NextResponse.json({
       success: true,
       conversionId: conversion.id,
@@ -151,8 +244,8 @@ export async function GET(req: Request) {
       commission
     })
 
-  } catch (error) {
-    console.error("Postback error:", error)
+  } catch (err) {
+    console.error("Postback error:", err)
 
     return NextResponse.json(
       { error: "postback failed" },

@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
               className={`px-3 py-1.5 text-xs rounded-lg transition ${
                 filter === f
                   ? "bg-black text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
               }`}
             >
               {f}
@@ -235,7 +235,7 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs rounded-lg transition hover:opacity-90 ${styles[variant]}`}
+      className={`px-3 py-1.5 text-xs rounded-lg transition hover:opacity-90 cursor-pointer ${styles[variant]}`}
     >
       {label}
     </button>

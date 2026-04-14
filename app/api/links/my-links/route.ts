@@ -72,7 +72,10 @@ return {
   originalUrl: link.originalUrl,  
   finalUrl: link.finalUrl,  
   title: link.title,  
-  imageUrl: link.imageUrl,  
+  imageUrl:
+  link.imageUrl?.startsWith("http")
+    ? `/api/image-proxy?url=${encodeURIComponent(link.imageUrl)}`
+    : "/placeholder.png",
 
   offer: link.offer,  
 

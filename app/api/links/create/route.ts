@@ -7,7 +7,11 @@ import * as cheerio from "cheerio"
 import { getSmartMetadata } from "@/lib/metadata"
 
 function getAmazonASIN(url: string) {
-  const match = url.match(/\/dp\/([A-Z0-9]{10})/)
+  const match =
+    url.match(/\/dp\/([A-Z0-9]{10})/) ||
+    url.match(/\/gp\/product\/([A-Z0-9]{10})/) ||
+    url.match(/\/product\/([A-Z0-9]{10})/)
+
   return match ? match[1] : null
 }
 
@@ -50,7 +54,7 @@ const asin = getAmazonASIN(url)
 if (!imageUrl || !imageUrl.startsWith("http")) {
 
   if (domain.includes("amazon.") && asin) {
-    imageUrl = `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`
+    imageUrl = `https://m.media-amazon.com/images/I/${asin}`
   } else {
     imageUrl = "/placeholder.png"
   }
@@ -246,13 +250,30 @@ if (!title || !imageUrl || imageUrl === "/placeholder.png") {
   // 🧠 إذا الرابط بسيط (homepage) → logo
 const isSimpleUrl = originalUrl.split("/").length <= 4
 
-imageUrl =
-  imageUrl && imageUrl !== "/placeholder.png"
-    ? imageUrl
-    : isSimpleUrl
-      ? `https://logo.clearbit.com/${domain}`
-      : fallback.imageUrl
+if (!imageUrl || !imageUrl.startsWith("http")) {
+
+  const asin = getAmazonASIN(originalUrl)
+
+  if (domain.includes("amazon.") && asin) {
+    // 🟢 Amazon product
+    imageUrl = `https://m.media-amazon.com/images/I/${asin}.jpg`
+
+  } else if (isSimpleUrl) {
+    // 🟡 Homepage → logo
+    imageUrl = `https://logo.clearbit.com/${domain}`
+
+  } else {
+    // 🔵 fallback عام
+    imageUrl = fallback.imageUrl || "/placeholder.png"
+  }
 }
+}
+
+const finalImage =
+  imageUrl && imageUrl.startsWith("http")
+    ? imageUrl
+    : "/placeholder.png"
+
 
 // 🔥 بناء رابط الافلييت (الجديد)  
 
@@ -272,7 +293,7 @@ originalUrl: originalUrl,  // 🔥 الرابط الحقيقي
 finalUrl: affiliateUrl,     // 🔥 رابط الربح  
 
 title,  
-imageUrl,  
+imageUrl: finalImage,  
 
 campaignName: campaign || null,  
 sub1: sub1 || null,  
