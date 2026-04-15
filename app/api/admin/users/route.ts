@@ -1,25 +1,30 @@
-export const runtime = "nodejs";
+export const runtime = "nodejs"
 
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import jwt from "jsonwebtoken"
+import { cookies } from "next/headers"
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    /* ========= AUTH ========= */
+    const cookieStore = await cookies()
+    const token = cookieStore.get("token")?.value
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { role: string };
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { role: string }
 
     if (decoded.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    /* ========= GET USERS ========= */
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -29,13 +34,34 @@ export async function GET() {
         role: true,
         status: true,
         createdAt: true,
-      },
-    });
 
-    return NextResponse.json({ users });
+        // 🔥 بيانات إضافية
+        country: true,
+        phone: true,
+        trafficSource: true,
+        trafficSourceUrl: true,
+
+        // 🔥 useful stats
+        _count: {
+          select: {
+            affiliateLinks: true,
+            clicks: true,
+            conversions: true,
+          },
+        },
+      },
+    })
+
+    /* ========= FORMAT ========= */
+    const formatted = users.map((u) => ({
+      ...u,
+      createdAt: u.createdAt.toISOString(),
+    }))
+
+    return NextResponse.json({ users: formatted })
 
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("ADMIN GET USERS ERROR:", error)
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }

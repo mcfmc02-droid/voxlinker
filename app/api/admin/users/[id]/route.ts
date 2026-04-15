@@ -3,10 +3,6 @@ export const runtime = "nodejs"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import jwt from "jsonwebtoken"
-import { sendEmail } from "@/lib/email/sendEmail"
-import { approvedEmail, rejectedEmail } from "@/lib/email/templates"
-
-
 
 /* ================= PATCH USER ================= */
 export async function PATCH(
@@ -42,19 +38,28 @@ export async function PATCH(
     /* ========= INPUT ========= */
     const body = await req.json()
 
-    if (!body.status) {
-      return NextResponse.json(
-        { error: "Status required" },
-        { status: 400 }
-      )
+    const allowedFields = [
+      "status",
+      "role",
+      "email",
+      "name",
+      "country",
+      "phone",
+      "trafficSource",
+      "trafficSourceUrl",
+    ]
+
+    const updateData: any = {}
+
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        updateData[key] = body[key]
+      }
     }
 
-    /* ========= VALIDATE STATUS ========= */
-    const allowedStatuses = ["ACTIVE", "PENDING", "SUSPENDED", "REJECTED"]
-
-    if (!allowedStatuses.includes(body.status)) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "Invalid status" },
+        { error: "No valid fields to update" },
         { status: 400 }
       )
     }
@@ -62,19 +67,18 @@ export async function PATCH(
     /* ========= UPDATE USER ========= */
     const { id } = await context.params
 
-const updatedUser = await prisma.user.update({
-  where: { id: Number(id) },
-  data: { status: body.status },
-})
-
+    const updatedUser = await prisma.user.update({
+      where: { id: Number(id) },
+      data: updateData,
+    })
 
     /* ========= ADMIN LOG ========= */
     await prisma.adminLog.create({
       data: {
         adminId: decoded.userId,
-        action: "UPDATE_STATUS",
+        action: "UPDATE_USER",
         targetUserId: updatedUser.id,
-        details: `Changed status to ${body.status}`,
+        details: JSON.stringify(updateData),
       },
     })
 

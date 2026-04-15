@@ -84,22 +84,40 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body
-        className={`
-          ${inter.variable}
-          ${geistSans.variable}
-          ${geistMono.variable}
-          font-sans antialiased
-          bg-white text-gray-900
-        `}
-      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+  <html lang="en" suppressHydrationWarning>
+  <head>
+    <meta name="color-scheme" content="light dark" />
 
-        <CookieBanner />
-      </body>
-    </html>
-  )
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+            }
+          })();
+        `,
+      }}
+    />
+  </head>
+
+    <body
+      className={`
+        ${inter.variable}
+        ${geistSans.variable}
+        ${geistMono.variable}
+        font-sans antialiased
+        bg-white text-gray-900
+        dark:bg-black dark:text-white
+      `}
+    >
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+
+      <CookieBanner />
+    </body>
+  </html>
+)
 }

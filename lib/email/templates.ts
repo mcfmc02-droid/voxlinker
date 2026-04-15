@@ -207,3 +207,57 @@ export function rejectedEmail(name: string) {
 
   `)
 }
+
+// ===== SUSPENDED =====
+export function suspendedEmail(name: string) {
+  return baseTemplate(`
+
+    <h2 style="color:#dc2626;margin-bottom:16px">
+      Account Status Update
+    </h2>
+
+    <p style="color:#333;margin-bottom:12px">
+      Hi ${name},
+    </p>
+
+    <p style="color:#555;line-height:1.7;margin-bottom:16px">
+      We hope you're doing well.
+    </p>
+
+    <p style="color:#555;line-height:1.7;margin-bottom:16px">
+      After a thorough review of your account activity and overall compliance with our platform guidelines, 
+      we regret to inform you that we are unable to continue working together at this time.
+    </p>
+
+    <p style="color:#555;line-height:1.7;margin-bottom:20px">
+      This decision was made carefully by our team to maintain the quality, integrity, and long-term sustainability 
+      of the VoxLinker ecosystem.
+    </p>
+
+    <div style="margin:20px 0;text-align:center">
+      <span style="
+        background:#fee2e2;
+        padding:10px 16px;
+        border-radius:8px;
+        color:#b91c1c;
+        font-size:13px;
+        display:inline-block
+      ">
+        Status: Account Suspended
+      </span>
+    </div>
+
+    <p style="color:#555;line-height:1.7;margin-top:20px">
+      If you would like more information regarding this decision, you're welcome to contact our team. 
+      We will do our best to provide clarification where possible.
+    </p>
+
+    <p style="color:#666;font-size:14px;margin-top:24px;line-height:1.8">
+      Best regards,<br/>
+      <strong style="display:inline-block;margin-top:6px;letter-spacing:0.3px">
+        The VoxLinker Team
+      </strong>
+    </p>
+
+  `)
+}

@@ -2,45 +2,62 @@ export function buildAffiliateLink(originalUrl: string, offer: any) {
   try {
     if (!offer?.landingUrl) return originalUrl
 
-    const domain = new URL(originalUrl).hostname
+    const url = new URL(originalUrl)
+    const domain = url.hostname
 
-    // 🟢 AMAZON
+    // 🟢 AMAZON (FIXED VERSION)
     if (domain.includes("amazon.")) {
+      // 🔥 مهم: استخدم tag من قاعدة البيانات أو environment variable
+      const tag = offer.trackingTemplate || "voxlinker-20" 
 
-  const asinMatch =
-    originalUrl.match(/\/dp\/([A-Z0-9]{10})/) ||
-    originalUrl.match(/\/gp\/product\/([A-Z0-9]{10})/) ||
-    originalUrl.match(/\/product\/([A-Z0-9]{10})/)
+      // 🔍 استخراج ASIN من أنواع روابط مختلفة
+      const asinMatch =
+        originalUrl.match(/\/dp\/([A-Z0-9]{10})/) ||
+        originalUrl.match(/\/gp\/product\/([A-Z0-9]{10})/) ||
+        originalUrl.match(/\/product\/([A-Z0-9]{10})/) ||
+        originalUrl.match(/\/exec\/obidos\/ASIN\/([A-Z0-9]{10})/)
 
-  const asin = asinMatch ? asinMatch[1] : null
+      const asin = asinMatch ? asinMatch[1] : null
 
-  if (asin) {
-    return `https://www.amazon.com/dp/${asin}?tag=voxlinker-20`
-  }
+      // ✅ CASE 1: PRODUCT LINK (يعمل بشكل صحيح)
+      if (asin) {
+        // 🔥 تأكد من إضافة tag بشكل صحيح
+        const productUrl = new URL(`https://${domain}/dp/${asin}`)
+        productUrl.searchParams.set("tag", tag)
+        productUrl.searchParams.set("linkCode", "ogi") // مهم لأمازون
+        return productUrl.toString()
+      }
 
-  // 🔥 fallback ذكي
-  return originalUrl
-}
+      // ✅ CASE 2: AMAZON HOMEPAGE
+      if (originalUrl === `https://${domain}/` || originalUrl === `https://${domain}`) {
+        // 🔥 للصفحة الرئيسية، استخدم landingUrl من العرض
+        const landingUrl = new URL(offer.landingUrl)
+        landingUrl.searchParams.set("tag", tag)
+        return landingUrl.toString()
+      }
 
-    // 🟡 WALMART (مستقبلاً)
-    if (domain.includes("walmart.com")) {
-      return `${offer.landingUrl}` // سنطورها لاحقاً
+      // ✅ CASE 3: SEARCH / CATEGORY / ANY OTHER AMAZON LINK
+      // 🔥 نضيف tag مع الحفاظ على كل الـ params الأصلية
+      url.searchParams.set("tag", tag)
+      
+      // 🎯 مهم: تأكد من أن tag موجودة في الرابط النهائي
+      console.log("🔗 Amazon General Link:", url.toString())
+      
+      return url.toString()
     }
 
-    // 🟡 TARGET (مستقبلاً)
-    if (domain.includes("target.com")) {
-      return `${offer.landingUrl}`
+    // 🟡 WALMART / TARGET / WAYFAIR
+    if (domain.includes("walmart.com") || 
+        domain.includes("target.com") || 
+        domain.includes("wayfair.com")) {
+      return offer.landingUrl
     }
 
-    // 🟡 WAYFAIR (مستقبلاً)
-    if (domain.includes("wayfair.com")) {
-      return `${offer.landingUrl}`
-    }
-
-    // 🔵 DEFAULT
+    // 🔵 DEFAULT: استخدم landingUrl مباشرة
     return offer.landingUrl
 
-  } catch {
-    return offer.landingUrl
+  } catch (error) {
+    console.error("❌ buildAffiliateLink Error:", error)
+    return originalUrl
   }
 }
