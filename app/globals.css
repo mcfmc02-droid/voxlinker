@@ -2,7 +2,10 @@
 
 
 html {
-  color-scheme: light dark;
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #000000;
+  forced-color-adjust: none;
 }
 
 :root {

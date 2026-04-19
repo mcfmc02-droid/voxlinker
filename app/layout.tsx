@@ -86,21 +86,9 @@ export default function RootLayout({
   return (
   <html lang="en" suppressHydrationWarning>
   <head>
-    <meta name="color-scheme" content="light dark" />
-
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `
-          (function() {
-            const theme = localStorage.getItem('theme');
-            if (theme === 'dark') {
-              document.documentElement.classList.add('dark');
-            }
-          })();
-        `,
-      }}
-    />
-  </head>
+  {/* 🔥 إجبار Light Mode فقط */}
+  <meta name="color-scheme" content="light" />
+</head>
 
     <body
       className={`
