@@ -19,3 +19,22 @@ export async function uploadImageFromUrl(url: string) {
     return null
   }
 }
+
+export async function uploadBufferToCloudinary(buffer: Buffer) {
+  return new Promise<string>((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        {
+          folder: "products",
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error)
+          } else {
+            resolve(result.secure_url)
+          }
+        }
+      )
+      .end(buffer)
+  })
+}

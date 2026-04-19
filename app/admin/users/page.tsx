@@ -26,6 +26,8 @@ export default function AdminUsersPage() {
   const [editUser, setEditUser] = useState<User | null>(null)
   const [emailMenuUser, setEmailMenuUser] = useState<number | null>(null)
   const emailMenuRef = useRef<HTMLDivElement | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [dropdownDirection, setDropdownDirection] = useState<"up" | "down">("down")
 
 
   useEffect(() => {
@@ -56,6 +58,10 @@ export default function AdminUsersPage() {
   }, [])
 
   const updateStatus = async (id: number, status: string) => {
+  const key = `status-${id}-${status}`
+  setActionLoading(key)
+
+  try {
     await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -63,25 +69,41 @@ export default function AdminUsersPage() {
       body: JSON.stringify({ status }),
     })
 
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status } : u)))
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status } : u))
+    )
+  } finally {
+    setActionLoading(null)
   }
+}
 
   const sendEmailToUser = async (user: User, type: string) => {
-  await fetch("/api/admin/send-email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      userId: user.id,
-      type, // welcome | approved | rejected | suspended
-    }),
-  })
+  const key = `email-${user.id}-${type}`
+  setActionLoading(key)
 
-  setEmailMenuUser(null)
+  try {
+    await fetch("/api/admin/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        userId: user.id,
+        type,
+      }),
+    })
+  } finally {
+    setActionLoading(null)
+    setEmailMenuUser(null)
+  }
 }
 
   const saveUser = async (userId: number) => {
-    if (!editUser) return
+  if (!editUser) return
+
+  const key = `save-${userId}`
+  setActionLoading(key)
+
+  try {
     await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -89,10 +111,17 @@ export default function AdminUsersPage() {
       body: JSON.stringify(editUser),
     })
 
-    setUsers((prev) => prev.map((u) => (u.id === userId ? editUser : u)))
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? editUser : u))
+    )
+
     setExpandedUser(null)
     setEditUser(null)
+
+  } finally {
+    setActionLoading(null)
   }
+}
 
   const filteredUsers = users
     .filter((u) => (filter === "ALL" ? true : u.status === filter))
@@ -200,40 +229,59 @@ export default function AdminUsersPage() {
 
     {/* PRIMARY ACTIONS */}
     <ActionButton
-      label="Approve"
-      onClick={() => updateStatus(user.id, "ACTIVE")}
-    />
+  label="Approve"
+  onClick={() => updateStatus(user.id, "ACTIVE")}
+  loading={actionLoading === `status-${user.id}-ACTIVE`}
+/>
 
-    <ActionButton
-      label="Reject"
-      variant="gray"
-      onClick={() => updateStatus(user.id, "REJECTED")}
-    />
+<ActionButton
+  label="Reject"
+  variant="gray"
+  onClick={() => updateStatus(user.id, "REJECTED")}
+  loading={actionLoading === `status-${user.id}-REJECTED`}
+/>
 
-    <ActionButton
-      label="Suspend"
-      variant="danger"
-      onClick={() => updateStatus(user.id, "SUSPENDED")}
-    />
+<ActionButton
+  label="Suspend"
+  variant="danger"
+  onClick={() => updateStatus(user.id, "SUSPENDED")}
+  loading={actionLoading === `status-${user.id}-SUSPENDED`}
+/>
 
     {/* EMAIL DROPDOWN */}
     <div className="relative" ref={emailMenuRef}>
       <button
-        onClick={() =>
-          setEmailMenuUser(emailMenuUser === user.id ? null : user.id)
-        }
+        onClick={(e) => {
+  const rect = (e.target as HTMLElement).getBoundingClientRect()
+
+  // إذا قريب من أسفل الشاشة → افتح لفوق
+  if (window.innerHeight - rect.bottom < 200) {
+    setDropdownDirection("up")
+  } else {
+    setDropdownDirection("down")
+  }
+
+  setEmailMenuUser(emailMenuUser === user.id ? null : user.id)
+}}
         className="px-3 py-1.5 text-xs rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition cursor-pointer"
       >
         Email
       </button>
 
       {emailMenuUser === user.id && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div
+  className={`
+    absolute right-0
+    ${dropdownDirection === "up" ? "bottom-full mb-2" : "top-full mt-2"}
+    w-44
+    bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]
+  `}
+>
 
-          <EmailOption label="Welcome" onClick={() => sendEmailToUser(user, "welcome")} />
-          <EmailOption label="Approved" onClick={() => sendEmailToUser(user, "approved")} />
-          <EmailOption label="Rejected" onClick={() => sendEmailToUser(user, "rejected")} />
-          <EmailOption label="Suspended" onClick={() => sendEmailToUser(user, "suspended")} />
+          <EmailOption label="Welcome" onClick={() => sendEmailToUser(user, "welcome")} loading={actionLoading === `email-${user.id}-welcome`} />
+          <EmailOption label="Approved" onClick={() => sendEmailToUser(user, "approved")} loading={actionLoading === `email-${user.id}-approved`} />
+          <EmailOption label="Rejected" onClick={() => sendEmailToUser(user, "rejected")} loading={actionLoading === `email-${user.id}-rejected`} />
+          <EmailOption label="Suspended" onClick={() => sendEmailToUser(user, "suspended")} loading={actionLoading === `email-${user.id}-suspended`} />
 
         </div>
       )}
@@ -324,15 +372,36 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function ActionButton({ label, onClick, variant = "primary" }: { label: string; onClick: () => void; variant?: "primary" | "gray" | "danger" }) {
+function ActionButton({
+  label,
+  onClick,
+  variant = "primary",
+  loading,
+}: {
+  label: string
+  onClick: () => void
+  variant?: "primary" | "gray" | "danger"
+  loading?: boolean
+}) {
   const styles: Record<string, string> = {
     primary: "bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white",
     gray: "bg-gray-100 text-gray-600",
     danger: "bg-red-100 text-red-600",
   }
+
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 text-xs rounded-lg transition hover:opacity-90 cursor-pointer ${styles[variant]}`}>
-      {label}
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`
+        px-3 py-1.5 text-xs rounded-lg transition
+        flex items-center gap-1
+        ${styles[variant]}
+        ${loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90 cursor-pointer"}
+      `}
+    >
+      {loading && <span className="animate-spin">⏳</span>}
+      {loading ? `${label}...` : label}
     </button>
   )
 }
@@ -353,19 +422,23 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
 function EmailOption({
   label,
   onClick,
+  loading,
 }: {
   label: string
   onClick: () => void
+  loading?: boolean
 }) {
   return (
     <div
-      onClick={onClick}
+      onClick={!loading ? onClick : undefined}
       className="group flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer transition"
     >
-      <span className="text-gray-700">{label}</span>
+      <span className="text-gray-700">
+        {loading ? "Sending..." : label}
+      </span>
 
       <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition">
-        Send →
+        {loading ? "..." : "Send →"}
       </span>
     </div>
   )

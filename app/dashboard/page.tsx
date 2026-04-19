@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { TrendingUp } from "lucide-react"
+import useSWR from "swr"
+import { useDebounce } from "use-debounce"
+
 
 import {
   ResponsiveContainer,
@@ -21,6 +24,7 @@ import {
 } from "@/components/ui/dashboard/Typography"
 
 import { StatsCard } from "@/components/ui/dashboard/StatsCard"
+
 
 type Stats = {
   totalClicks: number
@@ -42,8 +46,6 @@ export default function Dashboard() {
   
   const router = useRouter()
 
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(1)
 
   const [activeMetric, setActiveMetric] = useState<
@@ -53,6 +55,8 @@ export default function Dashboard() {
   const [customMode, setCustomMode] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  // ✅ Debounce (يمنع spam requests)
+  const [debouncedDays] = useDebounce(days, 500)
 
   const metricTitles = {
     netSales: "Net Sales",
@@ -64,60 +68,52 @@ export default function Dashboard() {
   }
 
 
-  useEffect(() => {
-    let isMounted = true
+  // ✅ fetcher
+const fetcher = (url: string) =>
+  fetch(url, { credentials: "include" }).then(res => {
+    if (!res.ok) throw new Error("Unauthorized")
+    return res.json()
+  })
 
-    const init = async () => {
-      try {
-        const authRes = await fetch("/api/me", {
-          credentials: "include",
-        })
+// ✅ query
+const query =
+  customMode && startDate && endDate
+    ? `/api/stats?start=${startDate}&end=${endDate}`
+    : `/api/stats?days=${debouncedDays}`
 
-        if (!authRes.ok) {
-          setLoading(false)
-          router.replace("/login")
-          return
-        }
+// ✅ SWR
+const { data: stats, isLoading, error } = useSWR(query, fetcher, {
+  revalidateOnFocus: true,
+  refreshInterval: 10000,
+  dedupingInterval: 5000,
+})
 
-        const query =
-          customMode && startDate && endDate
-            ? `/api/stats?start=${startDate}&end=${endDate}`
-            : `/api/stats?days=${days}`
-
-        const statsRes = await fetch(query, {
-          credentials: "include",
-        })
-
-        if (!statsRes.ok) {
-          router.replace("/login")
-          return
-        }
-
-        const statsData = await statsRes.json()
-
-        if (isMounted) {
-          setStats(statsData)
-        }
-      } catch (error) {
-        console.error("Dashboard error:", error)
-        router.replace("/login")
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    init()
-
-    return () => {
-      isMounted = false
-    }
-  }, [router, days, startDate, endDate, customMode])
-
-  if (loading) {
-    return <div className="p-8 text-gray-400">Loading dashboard...</div>
+useEffect(() => {
+  if (error) {
+    router.replace("/login")
   }
+}, [error, router])
+
+  if (isLoading) {
+  return (
+    <div className="p-8 space-y-6">
+
+      {/* Cards Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="h-24 bg-gray-100 animate-pulse rounded-xl"
+          />
+        ))}
+      </div>
+
+      {/* Chart Skeleton */}
+      <div className="h-64 bg-gray-100 animate-pulse rounded-2xl" />
+
+    </div>
+  )
+}
 
   if (!stats) {
   return <div className="p-8">Unauthorized</div>

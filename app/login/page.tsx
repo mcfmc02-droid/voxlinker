@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import LoginVisual from "@/components/ui/LoginVisual"
 import Link from "next/link";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function Login() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +44,10 @@ if (data.user?.status === "SUSPENDED") {
 }
 
 // 👇 هذا يبقى كما هو
-router.push("/dashboard");
+// 🔥 الحل هنا
+await refreshUser();
+
+router.replace("/dashboard");
 
     } catch {
       setMessage("Server error");

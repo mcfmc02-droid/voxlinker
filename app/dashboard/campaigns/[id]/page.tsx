@@ -454,36 +454,37 @@ radius={[6,6,0,0]}
 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
 
   {/* HEADER */}
-  <div className="flex items-center justify-between mb-6">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 
-    <h2 className="text-lg font-medium">
-      Creators in this campaign
-    </h2>
+  <h2 className="text-lg font-medium">
+    Creators in this campaign
+  </h2>
 
-    <button
-      onClick={()=>setOpen(true)}
-      className="
-      px-4 py-2
+  <button
+    onClick={()=>setOpen(true)}
+    className="
+    w-full sm:w-auto
 
-      rounded-lg
-      text-sm font-medium
+    px-4 py-2
+    rounded-lg
+    text-sm font-medium
 
-      bg-black text-white border border-black
+    bg-black text-white border border-black
 
-      transition-all duration-300
+    transition-all duration-300
 
-      hover:bg-white hover:text-black
-      hover:shadow-md
+    hover:bg-white hover:text-black
+    hover:shadow-md
 
-      active:scale-[0.97]
+    active:scale-[0.97]
 
-      cursor-pointer
-      "
-    > 
-      Add Creator
-    </button>
+    cursor-pointer
+    "
+  > 
+    Add Creator
+  </button>
 
-  </div>
+</div>
 
   {/* EMPTY */}
   {campaign.creators.length === 0 ? (

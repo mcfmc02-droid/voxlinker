@@ -5,7 +5,9 @@ import { randomBytes } from "crypto"
 import { getUserFromSession } from "@/lib/auth"
 import * as cheerio from "cheerio"
 import { getSmartMetadata } from "@/lib/metadata"
-import { uploadImageFromUrl } from "@/lib/uploadImage"
+import { uploadAmazonImage } from "@/lib/uploadAmazonImage"
+import { fetchProductImageFromGoogle } from "@/lib/fetchProductImage"
+
 
 // 🔍 استخراج ASIN من روابط أمازون
 function getAmazonASIN(url: string) {
@@ -56,11 +58,10 @@ async function extractProductData(url: string) {
     // 🟢 AMAZON SPECIAL HANDLING
     if (domain.includes("amazon.") && asin) {
       const imageVariations = [
-        `https://m.media-amazon.com/images/I/${asin}._AC_SL1500_.jpg`,
-        `https://m.media-amazon.com/images/I/${asin}._SL1500_.jpg`,
-        `https://m.media-amazon.com/images/I/${asin}.jpg`,
-      ]
-
+              `https://m.media-amazon.com/images/I/${asin}._AC_SL1500_.jpg`,
+              `https://m.media-amazon.com/images/I/${asin}._AC_UL1500_.jpg`,
+              `https://m.media-amazon.com/images/I/${asin}._SL1500_.jpg`,
+        ]
       for (const imgUrl of imageVariations) {
         try {
           const controller = new AbortController()
@@ -289,12 +290,95 @@ export async function POST(req: Request) {
       }
     }
 
-    // 🖼️ Upload image
-    let finalImage = "/placeholder.png"
-    if (imageUrl && imageUrl.startsWith("http")) {
-      const uploaded = await uploadImageFromUrl(imageUrl)
-      finalImage = uploaded || imageUrl
+    
+
+    // 🧠 STEP 1: check existing uploaded image (🔥 مهم جداً)
+let finalImage: string = "/placeholder.png"
+
+const existingImage = await prisma.affiliateLink.findFirst({
+  where: {
+    originalUrl,
+    imageUrl: {
+      contains: "res.cloudinary.com"
     }
+  },
+  select: {
+    imageUrl: true
+  }
+})
+
+// ✅ إذا الصورة موجودة مسبقاً → لا ترفع مرة أخرى
+if (existingImage?.imageUrl) {
+  finalImage = existingImage.imageUrl
+} else {
+
+  let uploaded: string | null = null
+
+// 🔥 AMAZON SPECIAL FIX
+if (domain.includes("amazon.")) {
+  const asin = getAmazonASIN(originalUrl)
+
+  if (asin) {
+    const variations = [
+      `https://m.media-amazon.com/images/I/${asin}._AC_SL1500_.jpg`,
+      `https://m.media-amazon.com/images/I/${asin}._AC_UL1500_.jpg`,
+      `https://m.media-amazon.com/images/I/${asin}._SL1500_.jpg`,
+    ]
+
+    for (const url of variations) {
+      uploaded = await uploadAmazonImage(url)
+      if (uploaded) break
+    }
+  }
+}
+
+// 🟡 fallback عادي
+if (!uploaded && imageUrl?.startsWith("http")) {
+  uploaded = await uploadAmazonImage(imageUrl)
+}
+
+// ✅ النتيجة
+if (uploaded) {
+  finalImage = uploaded
+} else {
+
+  console.log("⚠️ Amazon failed → switching to Google")
+
+  let googleImage: string | null = null
+
+  // 🔥 نحاول Google باستخدام title
+  if (title) {
+    googleImage = await fetchProductImageFromGoogle(title)
+  }
+
+  // 🔥 fallback إضافي (إذا title ضعيف)
+  if (!googleImage && originalUrl) {
+    googleImage = await fetchProductImageFromGoogle(originalUrl)
+  }
+
+  if (googleImage) {
+    console.log("✅ Found Google image")
+
+    try {
+      const uploadedGoogle = await uploadAmazonImage(googleImage)
+
+      if (uploadedGoogle) {
+        finalImage = uploadedGoogle
+      } else {
+        finalImage = googleImage
+      }
+
+    } catch {
+      finalImage = googleImage
+    }
+
+  } else {
+    console.log("❌ Google failed → last fallback")
+    finalImage = `https://logo.clearbit.com/${domain}`
+  }
+}
+}
+
 
     // 🧠 Fallback to brand logo
     if (!finalImage || finalImage === "/placeholder.png") {

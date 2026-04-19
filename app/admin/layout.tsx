@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react"
+import { useMode } from "@/hooks/useMode"
 
 export default function AdminLayout({
   children,
@@ -23,6 +24,7 @@ export default function AdminLayout({
 
   const [admin, setAdmin] = useState<any>(null)
   const [dark, setDark] = useState(false)
+  const { switchToUser } = useMode()
 
   /* ================= FETCH ADMIN ================= */
   useEffect(() => {
@@ -138,6 +140,27 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-4">
+
+            {/* BACK TO USER */}
+<button
+  onClick={switchToUser}
+  className="
+  px-3 py-1.5
+  text-xs font-medium
+
+  rounded-lg
+
+  bg-white text-black border border-gray-200
+
+  hover:bg-black hover:text-white
+  hover:shadow-md
+
+  transition
+  cursor-pointer
+  "
+>
+  ← Back to User
+</button>
 
             {/* THEME TOGGLE */}
             <button

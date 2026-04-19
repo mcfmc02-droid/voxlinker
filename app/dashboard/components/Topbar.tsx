@@ -12,6 +12,7 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Menu, X } from "lucide-react"
+import { useMode } from "@/hooks/useMode"
 
 export default function Topbar({
   onMenuClick,
@@ -32,6 +33,7 @@ export default function Topbar({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const { switchToAdmin } = useMode();
 
   // اغلاق القوائم عند الضغط خارجها
   useEffect(() => {
@@ -158,6 +160,28 @@ export default function Topbar({
       {/* ===== DESKTOP CONTENT ===== */}
       <div className="hidden md:flex items-center gap-6 relative">
 
+        {user?.role === "ADMIN" && (
+  <button
+    onClick={switchToAdmin}
+    className="
+    px-3 py-1.5
+    text-xs font-medium
+
+    rounded-lg
+
+    bg-black text-white
+
+    hover:opacity-90
+    hover:shadow-md
+
+    transition
+    cursor-pointer
+    "
+  >
+    Admin Mode
+  </button>
+)}
+
         {/* Notifications */}
         <div className="relative" ref={notificationsRef}>
           <Bell
@@ -181,7 +205,7 @@ export default function Topbar({
           )}
            </div>
         
-
+         
         {/* Settings */}
         <Settings
           size={20}

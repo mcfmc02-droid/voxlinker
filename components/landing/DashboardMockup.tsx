@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { Users } from "lucide-react"
 
 export default function NetworkVisual(){
 
@@ -42,13 +43,36 @@ bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c]
 blur-[30px] opacity-20
 "/>
 
-<p className="text-[26px] sm:text-[30px] font-semibold">
-$100B+
-</p>
+<div className="relative flex items-center justify-center">
 
-<p className="text-xs text-gray-500 text-center px-4">
-creator ecosystem
-</p>
+  {/* glow */}
+  <div
+    className="
+    absolute
+    w-20 h-20 sm:w-28 sm:h-28
+    bg-[#ff9a6c]
+    blur-[35px]
+    opacity-30
+    rounded-full
+  "
+  />
+
+  {/* SVG ICON */}
+  <div
+    className="
+    relative
+    w-60 h-60 sm:w-70 sm:h-70
+    flex items-center justify-center
+  "
+  >
+    <img
+      src="/icons/creator.svg"
+      alt="creator"
+      className="w-full h-full object-contain"
+    />
+  </div>
+
+</div>
 
 </motion.div>
 
@@ -110,7 +134,10 @@ style={{
 {/* orbit position */}
 <div
 style={{
-  transform: `rotate(${angle}deg) translateX(180px)`
+  transform: `
+  rotate(${angle}deg)
+  translateX(${typeof window !== "undefined" && window.innerWidth < 640 ? 130 : 130}px)
+`
 }}
 >
 

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
-
     const cookieStore = await cookies()
     const token = cookieStore.get("token")?.value
 
@@ -13,10 +12,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let decoded: { userId: number }
+    let decoded: { userId: number; role: string; status: string }
 
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number }
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+        userId: number
+        role: string
+        status: string
+      }
     } catch {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }
@@ -31,21 +34,15 @@ export async function GET() {
         bio: true,
         avatarUrl: true,
         status: true,
-        role: true
-      }
+        role: true,
+      },
     })
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    if (user.status === "PENDING") {
-      return NextResponse.json({ error: "PENDING" }, { status: 403 })
-    }
-
-    if (user.status === "SUSPENDED") {
-      return NextResponse.json({ error: "SUSPENDED" }, { status: 403 })
-    }
+    // ❌ لا تمنع هنا — middleware هو المسؤول
 
     const [firstName = "", ...rest] = (user.name || "").split(" ")
     const lastName = rest.join(" ")
@@ -59,13 +56,12 @@ export async function GET() {
       bio: user.bio,
       avatar: user.avatarUrl,
       firstName,
-      lastName
+      lastName,
     }
 
     return NextResponse.json({ user: formattedUser })
 
   } catch (error) {
-
     console.error("ME API ERROR:", error)
 
     return NextResponse.json(

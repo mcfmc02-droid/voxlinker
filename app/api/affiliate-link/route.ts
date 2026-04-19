@@ -30,9 +30,9 @@ brandId
 })
 
 if (existing) {
-return NextResponse.json({
-link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
-})
+  return NextResponse.json({
+    link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${existing.code}`
+  })
 }
 
 // 🔥 نأخذ offer فعال فقط
@@ -65,6 +65,6 @@ originalUrl: offer.landingUrl
 
 // 🔥 إرجاع الرابط النهائي مباشرة
 return NextResponse.json({
-link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${newLink.code}`
+  link: `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${newLink.code}`
 })
 }

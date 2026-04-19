@@ -1,6 +1,6 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY!)
 
 export async function sendEmail({
   to,
@@ -12,13 +12,16 @@ export async function sendEmail({
   html: string
 }) {
   try {
-    await resend.emails.send({
-      from: "VoxLinker <community@voxlinker.com>", // ✅ هنا التعديل
+    const data = await resend.emails.send({
+      from: "VoxLinker <onboarding@resend.dev>", // ⛔ مؤقت (ضروري للتجربة)
       to,
       subject,
       html,
     })
+
+    return { success: true, data }
   } catch (error) {
-    console.error("EMAIL ERROR:", error)
+    console.error("❌ EMAIL ERROR:", error)
+    return { success: false, error }
   }
 }

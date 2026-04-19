@@ -55,120 +55,150 @@ export async function GET(req: Request) {
     previousStart.setDate(previousStart.getDate() - days);
 
     // =========================
-    // 📊 CLICKS
-    // =========================
-    const totalClicks = await prisma.click.count({
-      where: {
-        userId,
-        createdAt: { gte: startDate, lte: endDate },
+// ⚡ FAST PARALLEL QUERIES
+// =========================
+const [
+  totalClicks,
+  totalConversions,
+  earningsAgg,
+  prevEarningsAgg
+] = await Promise.all([
+
+  // 🟢 clicks
+  prisma.click.count({
+    where: {
+      userId,
+      createdAt: { gte: startDate, lte: endDate },
+    },
+  }),
+
+  // 🟢 conversions
+  prisma.conversion.count({
+    where: {
+      userId,
+      status: "APPROVED",
+      createdAt: { gte: startDate, lte: endDate },
+    },
+  }),
+
+  // 🟢 earnings (current)
+  prisma.conversion.aggregate({
+    where: {
+      userId,
+      status: "APPROVED",
+      createdAt: { gte: startDate, lte: endDate },
+    },
+    _sum: {
+      commission: true,
+      revenue: true,
+    },
+  }),
+
+  // 🟢 earnings (previous period for growth)
+  prisma.conversion.aggregate({
+    where: {
+      userId,
+      status: "APPROVED",
+      createdAt: {
+        gte: previousStart,
+        lt: startDate,
       },
-    });
+    },
+    _sum: {
+      commission: true,
+    },
+  }),
+
+])
+
+// =========================
+// 💰 VALUES
+// =========================
+const totalEarnings = earningsAgg._sum.commission || 0
+const totalRevenue = earningsAgg._sum.revenue || 0
+
+const prevEarnings = prevEarningsAgg._sum.commission || 0
+
+// =========================
+// 📈 METRICS
+// =========================
+const conversionRate =
+  totalClicks > 0
+    ? (totalConversions / totalClicks) * 100
+    : 0
+
+const aov =
+  totalConversions > 0
+    ? totalRevenue / totalConversions
+    : 0
+
+const growth =
+  prevEarnings > 0
+    ? ((totalEarnings - prevEarnings) / prevEarnings) * 100
+    : 0
 
     // =========================
-    // 💸 CONVERSIONS
-    // =========================
-    const totalConversions = await prisma.conversion.count({
-      where: {
-        userId,
-        status: "APPROVED",
-        createdAt: { gte: startDate, lte: endDate },
-      },
-    });
+// 📊 CHART DATA (SQL FAST)
+// =========================
 
-    const earningsAgg = await prisma.conversion.aggregate({
-      where: {
-        userId,
-        status: "APPROVED",
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      _sum: {
-        commission: true,
-        revenue: true,
-      },
-    });
+// 🟢 clicks per day
+const clicksChart = await prisma.$queryRawUnsafe<
+  { date: string; clicks: number }[]
+>(`
+  SELECT 
+    DATE("createdAt") as date,
+    COUNT(*) as clicks
+  FROM "Click"
+  WHERE "userId" = ${userId}
+  AND "createdAt" BETWEEN '${startDate.toISOString()}' AND '${endDate.toISOString()}'
+  GROUP BY DATE("createdAt")
+  ORDER BY date ASC
+`)
 
-    const totalEarnings = earningsAgg._sum.commission || 0;
-    const totalRevenue = earningsAgg._sum.revenue || 0;
+// 🟢 conversions per day
+const conversionsChart = await prisma.$queryRawUnsafe<
+  { date: string; orders: number; earnings: number }[]
+>(`
+  SELECT 
+    DATE("createdAt") as date,
+    COUNT(*) as orders,
+    SUM("commission") as earnings
+  FROM "Conversion"
+  WHERE "userId" = ${userId}
+  AND "status" = 'APPROVED'
+  AND "createdAt" BETWEEN '${startDate.toISOString()}' AND '${endDate.toISOString()}'
+  GROUP BY DATE("createdAt")
+  ORDER BY date ASC
+`)
 
-    // =========================
-    // 📈 METRICS
-    // =========================
-    const conversionRate =
-      totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+// 🧠 merge
+const map: Record<string, any> = {}
 
-    const aov =
-      totalConversions > 0 ? totalRevenue / totalConversions : 0;
+clicksChart.forEach((c: any) => {
+  map[c.date] = {
+    date: c.date,
+    clicks: Number(c.clicks),
+    orders: 0,
+    earnings: 0,
+  }
+})
 
-    // =========================
-    // 📊 GROWTH
-    // =========================
-    const prevEarningsAgg = await prisma.conversion.aggregate({
-      where: {
-        userId,
-        status: "APPROVED",
-        createdAt: {
-          gte: previousStart,
-          lt: startDate,
-        },
-      },
-      _sum: {
-        commission: true,
-      },
-    });
+conversionsChart.forEach((c: any) => {
+  if (!map[c.date]) {
+    map[c.date] = {
+      date: c.date,
+      clicks: 0,
+      orders: 0,
+      earnings: 0,
+    }
+  }
 
-    const prevEarnings = prevEarningsAgg._sum.commission || 0;
+  map[c.date].orders = Number(c.orders)
+  map[c.date].earnings = Number(c.earnings || 0)
+})
 
-    const growth =
-      prevEarnings > 0
-        ? ((totalEarnings - prevEarnings) / prevEarnings) * 100
-        : 0;
-
-    // =========================
-    // 📊 CHART DATA (IMPROVED)
-    // =========================
-    const clicksData = await prisma.click.findMany({
-      where: {
-        userId,
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      select: { createdAt: true },
-    });
-
-    const conversionsData = await prisma.conversion.findMany({
-      where: {
-        userId,
-        status: "APPROVED",
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        createdAt: true,
-        commission: true,
-      },
-    });
-
-    const map: Record<string, any> = {};
-
-    clicksData.forEach((c) => {
-      const date = c.createdAt.toISOString().split("T")[0];
-      if (!map[date]) {
-        map[date] = { date, clicks: 0, orders: 0, earnings: 0 };
-      }
-      map[date].clicks++;
-    });
-
-    conversionsData.forEach((c) => {
-      const date = c.createdAt.toISOString().split("T")[0];
-      if (!map[date]) {
-        map[date] = { date, clicks: 0, orders: 0, earnings: 0 };
-      }
-      map[date].orders++;
-      map[date].earnings += c.commission || 0;
-    });
-
-    const chartData = Object.values(map).sort(
-      (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+// ✅ final
+const chartData = Object.values(map)
 
     // =========================
     // 🚀 RESPONSE

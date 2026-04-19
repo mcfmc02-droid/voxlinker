@@ -264,8 +264,8 @@ mt-10
     <div className="relative">
       <input
         type="text"
-        value={firstName}
-        readOnly
+        value={capitalize(firstName)}
+        disabled
         className="
         w-full mt-2 border-b border-gray-200 py-2 text-sm
         text-gray-500 bg-transparent
@@ -291,8 +291,8 @@ mt-10
     <div className="relative">
       <input
         type="text"
-        value={lastName}
-        readOnly
+        value={capitalize(lastName)}
+        disabled
         className="
         w-full mt-2 border-b border-gray-200 py-2 text-sm
         text-gray-500 bg-transparent

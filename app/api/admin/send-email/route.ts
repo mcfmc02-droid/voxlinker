@@ -90,21 +90,28 @@ export async function POST(req: Request) {
     }
 
     /* ========= SEND EMAIL ========= */
-    await sendEmail({
-      to: user.email,
-      subject,
-      html,
-    })
+const result = await sendEmail({
+  to: user.email,
+  subject,
+  html,
+})
 
-    /* ========= ADMIN LOG ========= */
-    await prisma.adminLog.create({
-      data: {
-        adminId: decoded.userId,
-        action: "SEND_EMAIL",
-        targetUserId: user.id,
-        details: `Email type: ${type}`,
-      },
-    })
+if (!result.success) {
+  return NextResponse.json(
+    { error: "Email failed to send" },
+    { status: 500 }
+  )
+}
+
+/* ========= ADMIN LOG ========= */
+await prisma.adminLog.create({
+  data: {
+    adminId: decoded.userId,
+    action: "SEND_EMAIL",
+    targetUserId: user.id,
+    details: `Email type: ${type}`,
+  },
+})
 
     return NextResponse.json({
       success: true,
