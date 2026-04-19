@@ -84,28 +84,36 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-  <html lang="en" suppressHydrationWarning>
-  <head>
-  {/* 🔥 إجبار Light Mode فقط */}
-  <meta name="color-scheme" content="light" />
-</head>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* 🔥 منع المتصفح من فرض dark */}
+        <meta name="color-scheme" content="light" />
+        <meta name="theme-color" content="#ffffff" />
 
-    <body
-      className={`
-        ${inter.variable}
-        ${geistSans.variable}
-        ${geistMono.variable}
-        font-sans antialiased
-        bg-white text-gray-900
-        dark:bg-black dark:text-white
-      `}
-    >
-      <AuthProvider>
-        {children}
-      </AuthProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.documentElement.style.colorScheme = 'light';
+            `,
+          }}
+        />
+      </head>
 
-      <CookieBanner />
-    </body>
-  </html>
-)
+      <body
+        className={`
+          ${inter.variable}
+          ${geistSans.variable}
+          ${geistMono.variable}
+          font-sans antialiased
+          bg-white text-gray-900
+        `}
+      >
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+
+        <CookieBanner />
+      </body>
+    </html>
+  )
 }
