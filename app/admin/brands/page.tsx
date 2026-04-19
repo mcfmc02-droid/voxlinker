@@ -93,7 +93,7 @@ export default function AdminBrandsPage() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold">Brands</h1>
+        <h1 className="text-2xl font-medium tracking-tight">Brands</h1> 
         <p className="text-sm text-gray-500 mt-1">
           Manage retailers & commissions
         </p>
@@ -157,7 +157,7 @@ export default function AdminBrandsPage() {
 
         <button
           onClick={createBrand}
-          className="mt-5 px-5 py-2.5 text-sm font-medium rounded-xl bg-black text-white hover:opacity-90 transition"
+          className="mt-5 px-5 py-2.5 text-sm font-medium rounded-xl bg-black text-white hover:opacity-90 transition cursor-pointer"
         >
           Create Brand
         </button>
@@ -301,7 +301,7 @@ export default function AdminBrandsPage() {
 
               <button
                 onClick={createCategory}
-                className="w-full py-2 text-sm rounded-xl bg-black text-white hover:opacity-90 transition"
+                className="w-full py-2 text-sm rounded-xl bg-black text-white hover:opacity-90 transition cursor-pointer"
               >
                 Add Category
               </button>

@@ -138,10 +138,10 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-10 p-6">
+    <div className="space-y-10">
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+        <h1 className="text-2xl font-medium tracking-tight">Users</h1>
         <p className="text-sm text-gray-500 mt-1">Manage platform users and permissions</p>
       </div>
 

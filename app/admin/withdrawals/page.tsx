@@ -72,7 +72,7 @@ export default function AdminPage() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight">
           Withdrawals & Payouts
         </h1>
         <p className="text-gray-500 text-sm">

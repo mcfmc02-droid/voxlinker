@@ -48,7 +48,7 @@ export default function AdminLogsPage() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight">
           Admin Logs
         </h1>
         <p className="text-sm text-gray-500 mt-1">

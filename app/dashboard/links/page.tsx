@@ -311,22 +311,33 @@ flex-1
 ">
 
   {/* IMAGE */}
-  <img
-  src={link.imageUrl || "/placeholder.png"}
+<div
   className="
     w-full sm:w-20 lg:w-24
     h-40 sm:h-20 lg:h-24
 
     rounded-xl
-    object-cover
-    border bg-gray-100
+    border bg-gray-50
+
+    flex items-center justify-center
+    overflow-hidden
 
     flex-shrink-0
   "
-  onError={(e) => {
-    e.currentTarget.src = "/placeholder.png"
-  }}
-/>
+>
+  <img
+    src={link.imageUrl || "/placeholder.png"}
+    className="
+      max-h-full
+      max-w-full
+      object-contain
+      transition duration-300 hover:scale-105
+    "
+    onError={(e) => {
+      e.currentTarget.src = "/placeholder.png"
+    }}
+  />
+</div>
 
   {/* TEXT */}
   <div className="

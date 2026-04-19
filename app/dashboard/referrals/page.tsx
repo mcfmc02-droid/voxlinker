@@ -60,7 +60,7 @@ export default function ReferralRewardsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight"> 
           Referral Rewards
         </h1>
 

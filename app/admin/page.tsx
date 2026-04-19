@@ -6,7 +6,7 @@ export default function AdminDashboard() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight">
           Dashboard
         </h1>
         <p className="text-sm text-gray-500 mt-1">

@@ -43,7 +43,7 @@ export default function AdminPayments() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight">
           Payments Center
         </h1>
         <p className="text-sm text-gray-500 mt-1">
