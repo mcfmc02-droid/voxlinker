@@ -97,6 +97,24 @@ export default function RootLayout({
             `,
           }}
         />
+
+         {/* 🚀 GOOGLE ANALYTICS */}
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-8HS1EPPSPT"
+  ></script>
+
+  <script
+    dangerouslySetInnerHTML={{
+      __html: `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-8HS1EPPSPT');
+      `,
+    }}
+  />
+  
       </head>
 
       <body
