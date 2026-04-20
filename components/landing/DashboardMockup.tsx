@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion"
 import { Users } from "lucide-react"
+import { useEffect, useState } from "react"
+
 
 export default function NetworkVisual(){
 
@@ -61,7 +63,7 @@ blur-[30px] opacity-20
   <div
     className="
     relative
-    w-60 h-60 sm:w-70 sm:h-70
+    w-100 h-100 sm:w-100 sm:h-100
     flex items-center justify-center
   "
   >
@@ -82,10 +84,10 @@ blur-[30px] opacity-20
 
 
   {/* ===== NODES ===== */}
-  <OrbitNode angle={0} delay={0} logo="/brands/amazon.svg" fixRotation />
-  <OrbitNode angle={90} delay={1} logo="/brands/shopify.svg" fixRotation />
-  <OrbitNode angle={180} delay={2} logo="/brands/wayfair.svg" fixRotation />
-  <OrbitNode angle={270} delay={3} logo="/brands/tiktok.svg" fixRotation />
+  <OrbitNode angle={0} logo="/brands/amazon.svg" rotateFix={0} />
+<OrbitNode angle={90} logo="/brands/shopify.svg" rotateFix={-90} />
+<OrbitNode angle={180} logo="/brands/canva.svg" rotateFix={180} />
+<OrbitNode angle={270} logo="/brands/tiktok.svg" rotateFix={90} />
 </div>
 
 
@@ -112,87 +114,95 @@ className="absolute bottom-[20%] right-[18%]"
 
 
 /* ===== ORBIT NODE (الجديد المهم) ===== */
-function OrbitNode({ angle, delay, logo, fixRotation }: any){
+function OrbitNode({ angle, logo, rotateFix = 0 }: any) {
 
-return(
+  const [radius, setRadius] = useState(160) // default desktop
 
-<motion.div
-animate={{ rotate:360 }}
-transition={{
-  duration:30,
-  repeat:Infinity,
-  ease:"linear"
-}}
-style={{
-  position:"absolute",
-  top:"50%",
-  left:"50%",
-  transform: "translate(-50%, -50%) rotateX(-65deg)"
-}}
->
+  useEffect(() => {
+    const updateRadius = () => {
+      if (window.innerWidth < 640) {
+        setRadius(120) // 📱 الهاتف
+      } else {
+        setRadius(180) // 💻 الكمبيوتر
+      }
+    }
 
-{/* orbit position */}
-<div
-style={{
-  transform: `
-  rotate(${angle}deg)
-  translateX(${typeof window !== "undefined" && window.innerWidth < 640 ? 130 : 130}px)
-`
-}}
->
+    updateRadius() // أول مرة
+    window.addEventListener("resize", updateRadius)
 
-{/* reverse rotation + depth illusion */}
-<motion.div
-animate={{
-  scale:[1, 0.85, 1],
-  opacity:[1, 0.6, 1]
-}}
-transition={{
-  duration:30,
-  delay,
-  repeat:Infinity,
-  ease:"linear"
-}}
->
+    return () => window.removeEventListener("resize", updateRadius)
+  }, [])
 
-<motion.div
-animate={{
-  y:[0,-6,0]
-}}
-transition={{
-  duration:4,
-  delay,
-  repeat:Infinity,
-  ease:"easeInOut"
-}}
-className="
-w-[95px] h-[95px]
-sm:w-[115px] sm:h-[115px]
-bg-white
-rounded-full
-shadow-xl
-flex items-center justify-center
-"
->
-
-{/* logo */}
-<img
+  return (
+    <div
+      className="absolute top-1/2 left-1/2 z-40"
+      style={{
+        transform: "translate(-50%, -50%)",
+      }}
+    >
+      {/* orbit container */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      >
+        {/* position on circle */}
+        <div
+          style={{
+            transform: `rotate(${angle}deg) translateX(${radius}px)`
+          }}
+        >
+          {/* 🔥 تثبيت اللوجو (الحل هنا) */}
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              transform: `rotate(-${angle}deg)`
+            }}
+          >
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="
+              group
+              w-[95px] h-[95px]
+              sm:w-[115px] sm:h-[115px]
+              bg-white
+              rounded-full
+              shadow-xl
+              flex items-center justify-center
+              transition-all duration-300
+              hover:scale-110 hover:shadow-[0_15px_40px_rgba(255,154,108,0.4)]
+              "
+            >
+              <img
   src={logo}
   alt="brand"
+  style={{ transform: `rotate(${rotateFix}deg)` }}
   className="
-  w-[55%] h-[55%]
-  object-contain
-  filter contrast-125 brightness-110 hover:scale-110 transition duration-300
+    w-[55%] h-[55%]
+    object-contain
+    transition duration-300
+    group-hover:scale-110
   "
 />
-
-</motion.div>
-
-</motion.div>
-</div>
-</motion.div>
-
-)
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  )
 }
 
 
