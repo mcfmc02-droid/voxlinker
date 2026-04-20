@@ -187,30 +187,63 @@ return (
   </p>
 </div>
 
-{/* ===== SEARCH (معدل بدون كسر شيء) ===== */}
+{/* ===== SEARCH ===== */}
 
 <div className="
 bg-white border border-gray-200
 rounded-2xl
-p-4 sm:p-5
 
-flex flex-col md:flex-row
-gap-3 md:gap-4
-md:items-center
+p-3 sm:p-4 md:p-5
+
+flex flex-col
+gap-3
+
+xl:flex-row xl:items-center xl:gap-4
+
+overflow-hidden
 ">
 
 {/* SEARCH */}
-<div className="w-full md:w-[420px] lg:w-[820px]">
-  <SearchToolbar placeholder="Search retailers..." />
+<div className="
+w-full
+xl:max-w-[420px]
+2xl:max-w-[820px]
+min-w-0
+">
+  <SearchToolbar
+    placeholder="Search retailers..."
+    value={search}
+    onChange={(e: any) => setSearch(e.target.value)}
+  />
 </div>
 
 {/* FILTERS */}
-<div className="flex gap-3 flex-wrap md:flex-nowrap md:flex-1">
+<div className="
+w-full
+flex flex-col
+gap-3
+
+xl:flex-row xl:flex-nowrap xl:flex-1
+
+min-w-0
+">
 
 <select
 value={selectedCategory}
 onChange={(e)=>setSelectedCategory(e.target.value)}
-className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm cursor-pointer"
+className="
+w-full
+min-w-0
+
+px-3 py-2.5
+border border-gray-200
+rounded-xl
+
+text-sm
+cursor-pointer
+
+truncate
+"
 > 
 <option value="all">All Categories</option>
 {categories.map(cat=>(
@@ -221,7 +254,19 @@ className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm cursor-pointer"
 <select
 value={commissionType}
 onChange={(e)=>setCommissionType(e.target.value)}
-className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm cursor-pointer"
+className="
+w-full
+min-w-0
+
+px-3 py-2.5
+border border-gray-200
+rounded-xl
+
+text-sm
+cursor-pointer
+
+truncate
+"
 > 
 <option value="all">All Commission Types</option>
 <option value="cpa">CPA</option>
@@ -397,13 +442,20 @@ min-w-0
 
 {/* ACTIVE */}
 <div className="
-flex items-center gap-1.5
-shrink-0 whitespace-nowrap
+flex items-center gap-1
+shrink-0
+min-w-0
 ">
 
 <span className="
-text-[11px] font-medium text-blue-600
-hidden sm:inline
+text-[10px] sm:text-[11px]
+
+font-medium text-blue-600
+
+whitespace-nowrap
+
+max-w-[60px] sm:max-w-none
+truncate
 ">
 Active
 </span>
@@ -451,9 +503,13 @@ Up to
 
 {/* RIGHT (Type) */}
 <div className="
-text-[11.5px] font-medium text-gray-500
-tracking-[0.06em] uppercase
-truncate
+text-[11px] sm:text-[11.5px]
+font-medium text-gray-500
+tracking-[0.05em] uppercase
+
+whitespace-nowrap sm:whitespace-normal
+overflow-hidden text-ellipsis
+max-w-[90px] sm:max-w-none
 ">
 {brand.commissionType}
 </div>
@@ -665,24 +721,28 @@ truncate
 
   {/* Panel */}
   <div
-    className="
-    bg-white shadow-2xl flex flex-col
+  className="
+  bg-white shadow-2xl flex flex-col
 
-    /* MOBILE */
-    fixed bottom-0 left-0 right-0
-    h-[85vh]
-    rounded-t-3xl
+  /* 📱 MOBILE */
+  fixed bottom-0 left-0 right-0
+  h-[88vh] max-h-[720px]
+  rounded-t-3xl
 
-    /* DESKTOP */
-    md:static
-    md:h-full
-    md:w-[460px]
-    md:rounded-none
+  /* 💻 DESKTOP */
+  md:static
+  md:h-full
+  md:w-[460px]
+  md:rounded-none
 
-    p-6 sm:p-8
-    overflow-y-auto
-    "
-  >
+  /* SPACING */
+  px-5 pt-5 pb-6 sm:px-6 sm:pt-6 sm:pb-8
+
+  /* SCROLL */
+  overflow-y-auto
+  overscroll-contain
+  "
+>
 
 {/* ===== DRAG HANDLE (mobile only) ===== */}
   <div className="w-10 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 md:hidden" />
