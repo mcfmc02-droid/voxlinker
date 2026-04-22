@@ -85,7 +85,10 @@ export default function CreatorsPage() {
           Monetize your audience with high-converting affiliate offers — without needing millions of followers.
         </p>
 
-        <button className="
+        <a
+          href="/register"
+          target="_blank"
+           className="
 px-6 py-3
 rounded-xl
 
@@ -102,7 +105,7 @@ hover:border-black
 transition-all duration-300 ease-out cursor-pointer
 ">
           Start Earning Now
-        </button>
+        </a>
 
       </section>
 
@@ -281,7 +284,10 @@ transition-all duration-300 ease-out cursor-pointer
             Your audience is already there — now turn it into income.
           </p>
 
-          <button className="
+          <a
+          href="/register"
+          target="_blank"
+           className="
 px-6 py-3
 rounded-xl
 
@@ -298,7 +304,7 @@ hover:border-black
 transition-all duration-300 ease-out cursor-pointer 
 ">
             Join Now
-          </button>
+          </a>
 
         </div>
 

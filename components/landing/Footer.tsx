@@ -97,11 +97,35 @@ Product
 
 <ul className="space-y-3 text-sm">
 
-<li className="hover:text-white transition cursor-pointer">Tracking</li>
-<li className="hover:text-white transition cursor-pointer">Analytics</li>
-<li className="hover:text-white transition cursor-pointer">Marketplace</li>
-<li className="hover:text-white transition cursor-pointer">API</li>
-<li className="hover:text-white transition cursor-pointer">Integrations</li>
+  <li>
+    <Link href="/tracking" className="hover:text-white transition cursor-pointer">
+      Tracking
+    </Link>
+  </li>
+
+  <li>
+    <Link href="/analytics" className="hover:text-white transition cursor-pointer">
+      Analytics
+    </Link>
+  </li>
+
+  <li>
+    <Link href="/marketplace" className="hover:text-white transition cursor-pointer">
+      Marketplace
+    </Link>
+  </li>
+
+  <li>
+    <Link href="/developers" className="hover:text-white transition cursor-pointer">
+      API
+    </Link>
+  </li>
+
+  <li>
+    <Link href="/integrations" className="hover:text-white transition cursor-pointer">
+      Integrations
+    </Link>
+  </li>
 
 </ul>
 
@@ -129,9 +153,21 @@ Joinas Creator
 </a>
 </li>
 
-<li className="hover:text-white transition cursor-pointer">Creator Dashboard</li>
-<li className="hover:text-white transition cursor-pointer">Affiliate Links</li>
-<li className="hover:text-white transition cursor-pointer">Revenue Tracking</li>
+<li>
+<Link href="/creator-dashboard" className="hover:text-white transition cursor-pointer">
+Creator Dashboard
+</Link>
+</li>
+<li>
+<Link href="/affiliate-links" className="hover:text-white transition cursor-pointer">
+Affiliate Links
+</Link>
+</li>
+<li>
+<Link href="/revenue-tracking" className="hover:text-white transition cursor-pointer">
+Revenue Tracking
+</Link>
+</li>
 
 </ul>
 
@@ -154,7 +190,11 @@ About
 </Link>
 </li>
 
-<li className="hover:text-white transition cursor-pointer">Careers</li>
+<li>
+<Link href="/careers" className="hover:text-white transition cursor-pointer">
+Careers
+</Link>
+</li>
 
 <li>
 <Link href="/blog" className="hover:text-white transition cursor-pointer">

@@ -77,7 +77,10 @@ export default function BrandsPage() {
           Scale your brand with high-converting creators, real-time tracking, and performance-driven campaigns.
         </p>
 
-        <button className="
+        <a
+          href="/contact"
+          target="_blank"
+           className="
         px-6 py-3
         rounded-xl
 
@@ -92,8 +95,8 @@ export default function BrandsPage() {
 
         transition-all duration-300 ease-out cursor-pointer
         ">
-          Start Partnering
-        </button>
+          Contact Us
+        </a>
 
       </section>
 
@@ -210,9 +213,13 @@ export default function BrandsPage() {
 
           <p className="text-gray-500 mb-6">
             Partner with creators, track performance, and scale your revenue with confidence.
+            Looking to partner with VoxLinker? partners@voxlinker.com
           </p>
 
-          <button className="
+          <a
+          href="/contact"
+          target="_blank"
+           className="
           px-6 py-3
           rounded-xl
 
@@ -228,7 +235,7 @@ export default function BrandsPage() {
           transition-all duration-300 ease-out cursor-pointer
           ">
             Get Started
-          </button>
+          </a>
 
         </div>
 
