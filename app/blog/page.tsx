@@ -315,7 +315,7 @@ onClick={()=>{
   setActiveCategory(null)
   setPage(0)
 }}
-className="text-xs text-gray-400 hover:text-black mb-2"
+className="text-xs text-gray-400 hover:text-black mb-2 cursor-pointer"
 > 
 Clearfilter
 </button>

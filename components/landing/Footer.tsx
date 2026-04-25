@@ -51,7 +51,7 @@ revenue through smart affiliate technology.
 {[
   { icon: Instagram, label: "Instagram", url: "https://www.instagram.com/voxlinker?igsh=bHM1dnI5aTA2dmVn" },
   { icon: Facebook, label: "Facebook", url: "https://www.facebook.com/share/187LTV63u1/" },
-  { icon: Twitter, label: "X"},
+  { icon: Twitter, label: "Twitter", url: "https://x.com/voxlinker" },
   { icon: Linkedin, label: "LinkedIn", url: "https://www.linkedin.com/in/voxlinker-llc-4398673ba?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
   { icon: Youtube, label: "YouTube", url: "https://www.youtube.com/channel/UCWrh-xY4jZhL9C9EmgSvEfA" },
 ].map((item, i) => {
