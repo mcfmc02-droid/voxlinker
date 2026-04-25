@@ -334,7 +334,7 @@ className={`
 w-full flex justify-between text-left transition
 ${activeCategory === cat
   ? "text-[#ff9a6c] font-medium"
-  : "text-gray-600 hover:text-[#ff9a6c]"}
+  : "text-gray-600 hover:text-[#ff9a6c] cursor-pointer"}
 `}
 >
 
