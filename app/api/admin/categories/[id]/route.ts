@@ -30,7 +30,7 @@ async function requireAdmin() {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     /* ========= AUTH ========= */
@@ -40,7 +40,7 @@ export async function PATCH(
     }
 
     /* ========= GET ID FROM PARAMS ========= */
-    const { id } = await params
+    const { id } = await context.params
     const categoryId = parseInt(id)
 
     if (isNaN(categoryId)) {
@@ -129,7 +129,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     /* ========= AUTH ========= */
@@ -139,7 +139,7 @@ export async function DELETE(
     }
 
     /* ========= GET ID FROM PARAMS ========= */
-    const { id } = await params
+    const { id } = await context.params
     const categoryId = parseInt(id)
 
     if (isNaN(categoryId)) {

@@ -172,7 +172,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin()
@@ -180,7 +180,7 @@ export async function PATCH(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const offerId = parseInt(id)
 
     if (isNaN(offerId)) {
@@ -244,7 +244,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin()
@@ -252,7 +252,7 @@ export async function DELETE(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const offerId = parseInt(id)
 
     if (isNaN(offerId)) {

@@ -47,7 +47,7 @@ async function requireAdmin(req: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin(request)
@@ -56,7 +56,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { id } = await params
+    const { id } = await context.params
     const userId = Number(id)
 
     if (isNaN(userId)) {

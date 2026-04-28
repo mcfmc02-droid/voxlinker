@@ -18,7 +18,7 @@ async function requireAdmin() {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin()
@@ -26,7 +26,7 @@ export async function PATCH(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const withdrawalId = parseInt(id)
     if (isNaN(withdrawalId)) {
       return NextResponse.json({ error: "Invalid withdrawal ID" }, { status: 400 })

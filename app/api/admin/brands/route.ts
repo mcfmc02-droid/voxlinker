@@ -179,7 +179,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     /* ========= AUTH ========= */
@@ -188,7 +188,7 @@ export async function PATCH(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const brandId = parseInt(id)
 
     if (isNaN(brandId)) {
@@ -266,7 +266,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     /* ========= AUTH ========= */
@@ -275,7 +275,7 @@ export async function DELETE(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const brandId = parseInt(id)
 
     if (isNaN(brandId)) {
