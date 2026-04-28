@@ -177,19 +177,17 @@ export async function POST(request: Request) {
 // ✏️ PATCH - UPDATE BRAND BY ID
 // ============================================================================
 
-export async function PATCH(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request) {
   try {
-    /* ========= AUTH ========= */
     const auth = await requireAdmin()
     if (!auth.success) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await context.params
-    const brandId = parseInt(id)
+    // ✅ جلب الـ ID من الـ URL
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+    const brandId = id ? parseInt(id) : NaN
 
     if (isNaN(brandId)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
@@ -264,19 +262,17 @@ export async function PATCH(
 // 🗑️ DELETE - REMOVE BRAND BY ID
 // ============================================================================
 
-export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request) {
   try {
-    /* ========= AUTH ========= */
     const auth = await requireAdmin()
     if (!auth.success) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { id } = await context.params
-    const brandId = parseInt(id)
+    // ✅ جلب الـ ID من الـ URL
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+    const brandId = id ? parseInt(id) : NaN
 
     if (isNaN(brandId)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
