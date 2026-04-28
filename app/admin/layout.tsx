@@ -8,10 +8,13 @@ import {
   Users,
   CreditCard,
   Wallet,
+  Package,
   FileText,
   Layers,
   Moon,
   Sun,
+  Link2,
+  MousePointerClick,
 } from "lucide-react"
 import { useMode } from "@/hooks/useMode"
 
@@ -61,6 +64,9 @@ export default function AdminLayout({
     { name: "Withdrawals", href: "/admin/withdrawals", icon: Wallet },
     { name: "Payments", href: "/admin/payments", icon: CreditCard },
     { name: "Brands", href: "/admin/brands", icon: Layers },
+    { name: "Offers", href: "/admin/offers", icon: Package },
+    { name: "Affiliate Links", href: "/admin/affiliate-links", icon: Link2 },
+    { name: "Clicks", href: "/admin/clicks", icon: MousePointerClick },
     { name: "Logs", href: "/admin/logs", icon: FileText },
   ]
 

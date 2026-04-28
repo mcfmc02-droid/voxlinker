@@ -1,24 +1,49 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserFromSession } from "@/lib/auth"
-import { requireAdmin } from "@/lib/adminAuth"
 
 export async function GET() {
   try {
+    // 🔐 Check admin
     const user = await getUserFromSession()
-    requireAdmin(user)
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
+    // 📊 Get withdrawals
     const withdrawals = await prisma.withdrawal.findMany({
-      orderBy: { createdAt: "desc" },
+      where: { 
+        status: "PENDING" 
+      },
       include: {
-        user: {
-          select: { id: true, email: true, firstName: true, lastName: true },
-        },
+        user: true,
+        wallet: true,
+      },
+      orderBy: { 
+        createdAt: "asc" as any
       },
     })
 
-    return NextResponse.json({ withdrawals })
-  } catch (err) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // 💰 Calculate total
+    const totalPending = withdrawals.reduce(
+      (sum: number, w: any) => sum + Number(w.netAmount || 0),
+      0
+    )
+
+    return NextResponse.json({
+      withdrawals,
+      totalPending,
+    })
+
+  } catch (error) {
+    console.error("Withdrawals API Error:", error)
+    return NextResponse.json(
+      { 
+        error: "Server error",
+        withdrawals: [],
+        totalPending: 0,
+      }, 
+      { status: 500 }
+    )
   }
 }

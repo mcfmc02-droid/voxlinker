@@ -13,7 +13,7 @@ export default function Footer(){
 
 return(
 
-<footer className="bg-gray-950 text-gray-400 pt-24 pb-14 px-6 lg:px-24">
+<footer className="bg-black text-gray-300 pt-24 pb-14 px-6 lg:px-24">
 
 <div className="max-w-7xl mx-auto">
 
@@ -36,7 +36,7 @@ return(
   />
 </button>
 
-<p className="text-gray-400 max-w-sm leading-relaxed">
+<p className="text-gray-300 max-w-sm leading-relaxed">
 
 VoxLinker is a modern affiliate infrastructure designed
 to help creators, publishers and brands grow sustainable
@@ -230,11 +230,11 @@ Contact
 
 <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
 
-<p className="text-gray-500">
+<p className="text-gray-300">
 © {new Date().getFullYear()} VoxLinker. All rights reserved.
 </p>
 
-<div className="flex gap-6 text-gray-500">
+<div className="flex gap-6 text-gray-300">
 
 <Link href="/privacy" className="hover:text-white transition cursor-pointer">
 Privacy Policy

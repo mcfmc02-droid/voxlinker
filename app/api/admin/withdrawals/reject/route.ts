@@ -1,12 +1,15 @@
+export const runtime = "nodejs"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserFromSession } from "@/lib/auth"
-import { requireAdmin } from "@/lib/adminAuth"
 
 export async function POST(req: Request) {
   try {
     const admin = await getUserFromSession()
-    requireAdmin(admin)
+    if (!admin || admin.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     const { withdrawalId } = await req.json()
 
@@ -19,7 +22,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    console.error("ADMIN REJECT ERROR:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
