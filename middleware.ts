@@ -25,7 +25,7 @@ export function middleware(req: NextRequest) {
   const isAdminRoute = pathname.startsWith("/admin")
   const isStatusPage =
     pathname.startsWith("/account-suspended") ||
-    pathname.startsWith("/account-pending") ||
+    pathname.startsWith("/pending") ||
     pathname.startsWith("/account-deleted")
 
   // 🎯 فقط هذه الصفحات نحميها
@@ -61,7 +61,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (status === "PENDING" && !pathname.startsWith("/account-pending")) {
+  if (status === "PENDING" && !pathname.startsWith("/pending")) {
     url.pathname = "/account-pending"
     return NextResponse.redirect(url)
   }

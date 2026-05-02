@@ -85,6 +85,7 @@ export default function AdminAffiliateLinksPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [copiedLinkId, setCopiedLinkId] = useState<number | null>(null)
 
   // Create/Edit state
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -188,18 +189,27 @@ export default function AdminAffiliateLinksPage() {
   }
 
 
-  const copyLink = async (code: string, slug: string | null) => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    const url = slug ? `${baseUrl}/go/${slug}` : `${baseUrl}/api/track/${code}`
+  const copyLink = async (code: string, slug: string | null, linkId: number) => {
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_APP_URL || ''
+  
+  const url = slug 
+    ? `${baseUrl}/go/${slug}` 
+    : `${baseUrl}/api/track/${code}`
+  
+  try {
+    await navigator.clipboard.writeText(url)
     
-    try {
-      await navigator.clipboard.writeText(url)
-      // يمكن إضافة Toast هنا
-      console.log("Link copied:", url)
-    } catch {
-      console.error("Failed to copy")
-    }
+    // ✅ تعيين الـ ID وإظهار علامة الصح
+    setCopiedLinkId(linkId)
+    setTimeout(() => setCopiedLinkId(null), 2000)
+    
+  } catch (error) {
+    console.error("Failed to copy link:", error)
+    // يمكن إضافة alert أو toast هنا
   }
+}
 
 
   const createLink = async () => {
@@ -597,9 +607,7 @@ export default function AdminAffiliateLinksPage() {
 
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {link.offer.brand.logoUrl && (
-                          <img src={link.offer.brand.logoUrl} alt="" className="w-5 h-5 rounded" />
-                        )}
+                       
                         <div>
                           <p className="text-sm text-gray-700">{link.offer.name}</p>
                           <p className="text-xs text-gray-400">{link.offer.brand.name}</p>
@@ -641,15 +649,19 @@ export default function AdminAffiliateLinksPage() {
                         />
 
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            copyLink(link.code, link.slug)
-                          }}
-                          className="p-2 rounded-lg hover:bg-gray-100 transition cursor-pointer text-gray-500 hover:text-gray-700"
-                          title="Copy link"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
+  onClick={(e) => {
+    e.stopPropagation()
+    copyLink(link.code, link.slug, link.id) // ✅ تمرير الـ ID
+  }}
+  className="p-2 rounded-lg hover:bg-gray-100 transition cursor-pointer text-gray-500 hover:text-gray-700"
+  title="Copy link"
+>
+  {copiedLinkId === link.id ? (
+    <CheckCircle2 className="w-4 h-4 text-green-600" />
+  ) : (
+    <Copy className="w-4 h-4" />
+  )}
+</button>
 
                         {link.finalUrl && (
                           <a
@@ -718,11 +730,18 @@ export default function AdminAffiliateLinksPage() {
                                     {link.code}
                                   </code>
                                   <button
-                                    onClick={() => copyLink(link.code, link.slug)}
-                                    className="p-1 hover:bg-gray-200 rounded cursor-pointer"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
+  onClick={(e) => {
+    e.stopPropagation()
+    copyLink(link.code, link.slug, link.id) // ✅ تمرير الـ ID
+  }}
+  className="p-1 hover:bg-gray-200 rounded cursor-pointer transition"
+>
+  {copiedLinkId === link.id ? (
+    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+  ) : (
+    <Copy className="w-3.5 h-3.5" />
+  )}
+</button>
                                 </div>
                               </div>
                               {link.slug && (

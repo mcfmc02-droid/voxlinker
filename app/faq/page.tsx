@@ -158,7 +158,7 @@ bg-white text-[#ff9a6c]
 px-6 py-3 rounded-full
 text-sm font-medium
 hover:scale-[1.05]
-transition
+transition cursor-pointer
 ">
 Contact Support
 </button>

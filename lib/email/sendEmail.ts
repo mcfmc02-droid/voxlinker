@@ -13,7 +13,7 @@ export async function sendEmail({
 }) {
   try {
     const data = await resend.emails.send({
-      from: "VoxLinker <onboarding@resend.dev>", // ⛔ مؤقت (ضروري للتجربة)
+      from: "VoxLinker <community@voxlinker.com>", // ⛔ مؤقت (ضروري للتجربة)
       to,
       subject,
       html,

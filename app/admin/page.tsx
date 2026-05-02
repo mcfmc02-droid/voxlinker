@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <NavLink href="/admin/users" label="Users" icon={<Users className="w-4 h-4" />} />
             <NavLink href="/admin/offers" label="Offers" icon={<Package className="w-4 h-4" />} />
-            <NavLink href="/admin/withdrawals" label="Withdrawals" icon={<Wallet className="w-4 h-4" />} />
+            <NavLink href="/admin/wallet" label="Wallet" icon={<Wallet className="w-4 h-4" />} />
             <NavLink href="/admin/brands" label="Brands" icon={<TrendingUp className="w-4 h-4" />} />
           </div>
         </div>

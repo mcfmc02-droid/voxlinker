@@ -93,17 +93,35 @@ export async function GET(request: Request) {
       prisma.affiliateLink.count({ where }),
     ])
 
+        // ✅ تسطيح بيانات _count لتكون سهلة الوصول في الواجهة
     const formattedLinks = links.map((link) => ({
       ...link,
+      // ✅ استخراج الإحصائيات من _count ووضعها في المستوى الأعلى
+      clicksCount: link._count?.clicks || 0,
+      conversionsCount: link._count?.conversions || 0,
       createdAt: link.createdAt.toISOString(),
       updatedAt: link.updatedAt.toISOString(),
+      // ✅ إزالة _count لتجنب التكرار
+      _count: undefined,
     }))
+
+    // 📊 حساب الإحصائيات الشاملة للبطاقات العلوية
+    const totalClicks = links.reduce((sum, link) => sum + (link._count?.clicks || 0), 0)
+    const totalConversions = links.reduce((sum, link) => sum + (link._count?.conversions || 0), 0)
+    const activeLinks = links.filter(link => link.isActive).length
 
     return NextResponse.json({
       links: formattedLinks,
       totalPages: Math.ceil(total / pageSize),
       currentPage: page,
       total,
+      // ✅ إضافة الإحصائيات الشاملة
+      stats: {
+        totalLinks: total,
+        activeLinks,
+        totalClicks,
+        totalConversions,
+      }
     })
 
   } catch (error) {
