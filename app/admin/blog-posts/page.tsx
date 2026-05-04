@@ -324,35 +324,47 @@ export default function AdminBlogPostsPage() {
         </div>
 
 
-        {/* ================= FILTERS + SEARCH ================= */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm flex flex-col md:flex-row gap-4">
-          <div className="flex gap-2 flex-wrap">
-            {["ALL", "Tutorial", "News", "Guide", "Update"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilter(cat)}
-                className={`px-4 py-2 text-sm rounded-xl transition-all duration-200 cursor-pointer ${
-                  filter === cat
-                    ? "bg-black text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-          
-          <div className="relative flex-1 md:max-w-xs">
-            <input
-              placeholder="Search by title or excerpt..."
-              value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {/* ================= FILTERS + SEARCH (Unified Design) ================= */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4">
+            
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <input
+                placeholder="Search by title or excerpt..."
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                className="
+                  w-full pl-10 pr-4 py-2.5 text-sm
+                  bg-white border border-gray-200 rounded-xl
+                  outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
+                  transition-all duration-200
+                "
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* Category Filters */}
+            <div className="flex gap-2 flex-wrap overflow-x-auto pb-2 md:pb-0">
+              {["ALL", "Tutorial", "News", "Guide", "Update"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFilter(cat)}
+                  className={`
+                    px-4 py-2.5 text-sm rounded-xl whitespace-nowrap transition-all duration-200 cursor-pointer
+                    ${
+                      filter === cat
+                        ? "bg-black text-white shadow-md"
+                        : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    }
+                  `}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-
 
         {/* ================= CREATE FORM MODAL ================= */}
         {showCreateForm && (

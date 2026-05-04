@@ -402,32 +402,45 @@ export default function AdminCampaignsPage() {
         </div>
 
 
-        {/* ================= FILTERS + SEARCH ================= */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm flex flex-col md:flex-row gap-4">
-          <div className="flex gap-2 flex-wrap">
-            {["ALL", "ACTIVE", "PAUSED", "COMPLETED", "DRAFT"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 text-sm rounded-xl transition-all duration-200 cursor-pointer ${
-                  filter === f
-                    ? "bg-black text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          
-          <div className="relative flex-1 md:max-w-xs">
-            <input
-              placeholder="Search by campaign name..."
-              value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {/* ================= FILTERS + SEARCH (Unified Design) ================= */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4">
+            
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <input
+                placeholder="Search by campaign name..."
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                className="
+                  w-full pl-10 pr-4 py-2.5 text-sm
+                  bg-white border border-gray-200 rounded-xl
+                  outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
+                  transition-all duration-200
+                "
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* Status Filters */}
+            <div className="flex gap-2 flex-wrap md:flex-nowrap overflow-x-auto pb-2 md:pb-0">
+              {["ALL", "ACTIVE", "PAUSED", "COMPLETED", "DRAFT"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`
+                    px-4 py-2.5 text-sm rounded-xl whitespace-nowrap transition-all duration-200 cursor-pointer
+                    ${
+                      filter === f
+                        ? "bg-black text-white shadow-md"
+                        : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    }
+                  `}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -615,158 +628,167 @@ export default function AdminCampaignsPage() {
                     </tr>
 
                     {/* EXPANDED EDIT ROW */}
-                    {expandedCampaign === campaign.id && (
-                      <tr className="bg-gray-50/80 dark:bg-white/5 border-t border-gray-100 dark:border-white/10">
-                        <td colSpan={6} className="px-6 py-6">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
-                            
-                            {/* Campaign Settings */}
-                            <div className="space-y-4">
-                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                <Target className="w-4 h-4" />
-                                Campaign Settings
-                              </h4>
-                              <Input 
-                                label="Campaign Name" 
-                                value={editData.name || ""} 
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, name: e.target.value })} 
-                              />
-                              <Input 
-                                label="Budget (USD)" 
-                                type="number"
-                                value={(editData.budget || 0).toString()} 
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, budget: parseFloat(e.target.value) || 0 })} 
-                              />
-                              <div>
-                                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
-                                <select
-                                  value={editData.status || campaign.status}
-                                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditData({ ...editData, status: e.target.value as any })}
-                                  className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 cursor-pointer"
-                                >
-                                  <option value="DRAFT">Draft</option>
-                                  <option value="ACTIVE">Active</option>
-                                  <option value="PAUSED">Paused</option>
-                                  <option value="COMPLETED">Completed</option>
-                                </select>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <Input 
-                                  label="Start Date" 
-                                  type="date"
-                                  value={editData.startDate || campaign.startDate || ""} 
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, startDate: e.target.value })} 
-                                />
-                                <Input 
-                                  label="End Date" 
-                                  type="date"
-                                  value={editData.endDate || campaign.endDate || ""} 
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, endDate: e.target.value })} 
-                                />
-                              </div>
-                            </div>
+{expandedCampaign === campaign.id && (
+  <tr className="bg-gray-50/80 dark:bg-white/5 border-t border-gray-100 dark:border-white/10">
+    <td colSpan={6} className="px-6 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
+        
+        {/* Campaign Settings */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            Campaign Settings
+          </h4>
+          <Input 
+            label="Campaign Name" 
+            value={editData.name || ""} 
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, name: e.target.value })} 
+          />
+          <Input 
+            label="Budget (USD)" 
+            type="number"
+            value={(editData.budget || 0).toString()} 
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, budget: parseFloat(e.target.value) || 0 })} 
+          />
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
+            <select
+              value={editData.status || campaign.status}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditData({ ...editData, status: e.target.value as any })}
+              className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 cursor-pointer"
+            >
+              <option value="DRAFT">📝 Draft</option>
+              <option value="ACTIVE">🟢 Active</option>
+              <option value="PAUSED">⏸️ Paused</option>
+              <option value="COMPLETED">✅ Completed</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={editData.startDate || campaign.startDate || ""} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, startDate: e.target.value })} 
+                className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">End Date</label>
+              <input
+                type="date"
+                value={editData.endDate || campaign.endDate || ""} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, endDate: e.target.value })} 
+                className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
 
-                            {/* Creator Management */}
-                            <div className="space-y-4">
-                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Manage Creators ({campaign.creatorsCount})
-                              </h4>
-                              
-                              {/* Add Creator */}
-                              <div className="flex gap-2">
-                                <select
-                                  value={selectedCreator || ""}
-                                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCreator(parseInt(e.target.value))}
-                                  className="flex-1 px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30"
-                                >
-                                  <option value="">Select a creator...</option>
-                                  {availableCreators.map((creator) => (
-                                    <option key={creator.id} value={creator.id}>
-                                      {creator.email} {creator.name ? `(${creator.name})` : ""}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() => selectedCreator && addCreatorToCampaign(campaign.id, selectedCreator)}
-                                  disabled={!selectedCreator || actionLoading?.includes("add-creator")}
-                                  className="px-4 py-2 text-sm rounded-xl bg-[#ff9a6c] text-white hover:opacity-95 transition cursor-pointer disabled:opacity-60 flex items-center gap-2"
-                                >
-                                  <UserPlus className="w-4 h-4" />
-                                  Add
-                                </button>
-                              </div>
+        {/* Creator Management - مع محاذاة صحيحة */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Manage Creators ({campaign.creatorsCount})
+          </h4>
+          
+          {/* Add Creator - مع label فارغ للمحاذاة */}
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1 opacity-0">Add Creator</label>
+            <div className="flex gap-2">
+              <select
+                value={selectedCreator || ""}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCreator(parseInt(e.target.value))}
+                className="flex-1 px-3.5 py-2.5 text-sm bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 cursor-pointer"
+              >
+                <option value="">Select a creator...</option>
+                {availableCreators.map((creator) => (
+                  <option key={creator.id} value={creator.id}>
+                    {creator.email} {creator.name ? `(${creator.name})` : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => selectedCreator && addCreatorToCampaign(campaign.id, selectedCreator)}
+                disabled={!selectedCreator || actionLoading?.includes("add-creator")}
+                className="px-4 py-2.5 text-sm rounded-xl bg-[#ff9a6c] text-white hover:opacity-95 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+              >
+                <UserPlus className="w-4 h-4" />
+                Add
+              </button>
+            </div>
+          </div>
 
-                              {/* Current Creators List */}
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {campaign.creators?.map((c) => (
-                                  <div key={c.id} className="flex items-center justify-between p-3 bg-white dark:bg-[#1a1a1c] rounded-xl border border-gray-100 dark:border-white/10">
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white">{c.user.email}</p>
-                                      <p className="text-xs text-gray-400">Joined: {new Date(c.joinedAt).toLocaleDateString()}</p>
-                                    </div>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); removeCreatorFromCampaign(campaign.id, c.user.id) }}
-                                      disabled={actionLoading?.includes("remove-creator")}
-                                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition cursor-pointer"
-                                      title="Remove creator"
-                                    >
-                                      <XCircle className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                ))}
-                                {(!campaign.creators || campaign.creators.length === 0) && (
-                                  <p className="text-sm text-gray-400 text-center py-4">No creators assigned yet</p>
-                                )}
-                              </div>
-                            </div>
+          {/* Current Creators List */}
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {campaign.creators?.map((c) => (
+              <div key={c.id} className="flex items-center justify-between p-3 bg-white dark:bg-[#1a1a1c] rounded-xl border border-gray-100 dark:border-white/10">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{c.user.email}</p>
+                  <p className="text-xs text-gray-400">Joined: {new Date(c.joinedAt).toLocaleDateString()}</p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeCreatorFromCampaign(campaign.id, c.user.id) }}
+                  disabled={actionLoading?.includes("remove-creator")}
+                  className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition cursor-pointer"
+                  title="Remove creator"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {(!campaign.creators || campaign.creators.length === 0) && (
+              <p className="text-sm text-gray-400 text-center py-4">No creators assigned yet</p>
+            )}
+          </div>
+        </div>
 
-                          </div>
+      </div>
 
-                          {/* Action Buttons */}
-                          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 max-w-6xl mx-auto">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); updateCampaign(campaign.id) }}
-                                disabled={actionLoading === `update-${campaign.id}`}
-                                className="
-                                  inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
-                                  bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white
-                                  hover:opacity-95 transition cursor-pointer disabled:opacity-60
-                                "
-                              >
-                                {actionLoading === `update-${campaign.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                {actionLoading === `update-${campaign.id}` ? "Saving..." : "Save Changes"}
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setExpandedCampaign(null) }}
-                                className="
-                                  inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
-                                  bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200
-                                  transition cursor-pointer
-                                "
-                              >
-                                <X className="w-4 h-4" />
-                                Cancel
-                              </button>
-                            </div>
+      {/* Action Buttons */}
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 max-w-6xl mx-auto">
+        <div className="flex gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); updateCampaign(campaign.id) }}
+            disabled={actionLoading === `update-${campaign.id}`}
+            className="
+              inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
+              bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white
+              hover:opacity-95 transition cursor-pointer disabled:opacity-60
+            "
+          >
+            {actionLoading === `update-${campaign.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            {actionLoading === `update-${campaign.id}` ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpandedCampaign(null) }}
+            className="
+              inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
+              bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200
+              transition cursor-pointer
+            "
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </button>
+        </div>
 
-                            <button
-                              onClick={(e) => { e.stopPropagation(); deleteCampaign(campaign.id) }}
-                              disabled={actionLoading === `delete-${campaign.id}`}
-                              className="
-                                inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
-                                bg-white dark:bg-[#1a1a1c] border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20
-                                transition cursor-pointer disabled:opacity-50
-                              "
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete Campaign
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+        <button
+          onClick={(e) => { e.stopPropagation(); deleteCampaign(campaign.id) }}
+          disabled={actionLoading === `delete-${campaign.id}`}
+          className="
+            inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
+            bg-white dark:bg-[#1a1a1c] border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20
+            transition cursor-pointer disabled:opacity-50
+          "
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Campaign
+        </button>
+      </div>
+    </td>
+  </tr>
+)}
                   </Fragment>
                 ))
               )}

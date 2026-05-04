@@ -487,20 +487,22 @@ export default function AdminBrandsPage() {
         )}
 
 
-        {/* ================= SEARCH ================= */}
-        <div className="relative max-w-md">
-          <input
-            placeholder="Search brands..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="
-              w-full pl-10 pr-4 py-2.5 text-sm
-              bg-white border border-gray-200 rounded-xl
-              outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
-              transition-all duration-200
-            "
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        {/* ================= SEARCH (Unified Design) ================= */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm">
+          <div className="relative flex-1">
+            <input
+              placeholder="Search brands..."
+              value={search}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              className="
+                w-full pl-10 pr-4 py-2.5 text-sm
+                bg-white border border-gray-200 rounded-xl
+                outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
+                transition-all duration-200
+              "
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
         </div>
 
 

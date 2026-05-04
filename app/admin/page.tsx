@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
             highlight={(data?.pendingWithdrawals ?? 0) > 0}
           />
           <StatCard 
-            title="Active Campaigns" 
+            title="Active Offers" 
             value={data?.activeCampaigns ?? 0} 
             icon={<Package className="w-5 h-5 text-purple-600" />} 
           />

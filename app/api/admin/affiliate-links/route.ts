@@ -34,18 +34,44 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
+    
+    // ✅ دعم وضع "all" لجلب كل النتائج للفلتر الحالي (للتجميع)
+    const fetchAll = searchParams.get('all') === 'true'
+    const page = fetchAll ? 1 : parseInt(searchParams.get("page") || "1")
     const search = searchParams.get("search") || ""
     const status = searchParams.get("status")
     const userId = searchParams.get("userId")
     const offerId = searchParams.get("offerId")
+    const traffic = searchParams.get("traffic") // ✅ جديد: فلترة حسب مصدر الترافيك
     
-    const pageSize = 20
-    const skip = (page - 1) * pageSize
+    const pageSize = fetchAll ? 1000 : 20 // ✅ عند all=true، نجل
+    const skip = fetchAll ? 0 : (page - 1) * pageSize
 
     // 🏗️ Build where clause
     const where: any = {
       isDeleted: false,
+    }
+
+    // ✅ فلترة حسب المستخدم إذا طُلب (للتصفح المستقل)
+    if (userId) {
+      where.userId = parseInt(userId)
+    }
+
+    // ✅ فلترة حسب مصدر الترافيك (sub1)
+    if (traffic && traffic !== "ALL") {
+      const trafficFilters: Record<string, string[]> = {
+        facebook: ["facebook", "fb"],
+        instagram: ["instagram", "ig"],
+        twitter: ["twitter", "x.com"],
+        tiktok: ["tiktok", "tt"],
+        youtube: ["youtube", "yt"],
+        google: ["google", "ads.google"],
+        email: ["email", "newsletter"],
+      }
+      const keywords = trafficFilters[traffic] || [traffic]
+      where.sub1 = {
+        in: keywords.map(k => k.toLowerCase())
+      }
     }
 
     if (search) {
@@ -62,7 +88,6 @@ export async function GET(request: Request) {
 
     if (status === "ACTIVE") where.isActive = true
     if (status === "INACTIVE") where.isActive = false
-    if (userId) where.userId = parseInt(userId)
     if (offerId) where.offerId = parseInt(offerId)
 
     // 📡 Fetch links with relations
@@ -93,35 +118,39 @@ export async function GET(request: Request) {
       prisma.affiliateLink.count({ where }),
     ])
 
-        // ✅ تسطيح بيانات _count لتكون سهلة الوصول في الواجهة
+    // ✅ تسطيح بيانات _count لتكون سهلة الوصول في الواجهة
     const formattedLinks = links.map((link) => ({
       ...link,
-      // ✅ استخراج الإحصائيات من _count ووضعها في المستوى الأعلى
       clicksCount: link._count?.clicks || 0,
       conversionsCount: link._count?.conversions || 0,
       createdAt: link.createdAt.toISOString(),
       updatedAt: link.updatedAt.toISOString(),
-      // ✅ إزالة _count لتجنب التكرار
       _count: undefined,
     }))
 
-    // 📊 حساب الإحصائيات الشاملة للبطاقات العلوية
-    const totalClicks = links.reduce((sum, link) => sum + (link._count?.clicks || 0), 0)
-    const totalConversions = links.reduce((sum, link) => sum + (link._count?.conversions || 0), 0)
-    const activeLinks = links.filter(link => link.isActive).length
+    // 📊 حساب الإحصائيات الشاملة للبطاقات العلوية (دائماً من النظام كله)
+    const [globalTotal, globalActive, globalClicks, globalConversions] = await Promise.all([
+      prisma.affiliateLink.count({ where: { isDeleted: false } }),
+      prisma.affiliateLink.count({ where: { isDeleted: false, isActive: true } }),
+      prisma.click.count({ where: { affiliateLink: { isDeleted: false } } }),
+      prisma.conversion.count({ where: { affiliateLink: { isDeleted: false } } }),
+    ])
 
     return NextResponse.json({
       links: formattedLinks,
-      totalPages: Math.ceil(total / pageSize),
+      totalPages: fetchAll ? 1 : Math.ceil(total / pageSize),
       currentPage: page,
       total,
-      // ✅ إضافة الإحصائيات الشاملة
+      // ✅ إضافة الإحصائيات الشاملة (دائماً من النظام كله)
       stats: {
-        totalLinks: total,
-        activeLinks,
-        totalClicks,
-        totalConversions,
-      }
+        totalLinks: globalTotal,
+        activeLinks: globalActive,
+        totalClicks: globalClicks,
+        totalConversions: globalConversions,
+      },
+      // ✅ معلومات إضافية للتصفح المستقل
+      ...(userId && { userId }),
+      ...(traffic && { traffic }),
     })
 
   } catch (error) {
@@ -146,7 +175,7 @@ export async function POST(request: Request) {
     const {
       originalUrl,
       offerId,
-      userId,  // ✅ الآن مطلوب
+      userId,
       campaignName,
       sub1,
       sub2,
@@ -157,7 +186,7 @@ export async function POST(request: Request) {
       imageUrl,
     } = body
 
-    // 🔐 Validation - userId الآن مطلوب
+    // 🔐 Validation
     if (!originalUrl?.trim() || !offerId || !userId) {
       return NextResponse.json(
         { error: "Original URL, Offer ID, and User ID are required" },
@@ -171,7 +200,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Offer not found" }, { status: 404 })
     }
 
-    // 🔍 Check if user exists (optional but recommended)
+    // 🔍 Check if user exists
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } })
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -190,13 +219,13 @@ export async function POST(request: Request) {
       attempts++
     }
 
-    // ✨ Create link - ✅ userId مطلوب الآن
+    // ✨ Create link
     const link = await prisma.affiliateLink.create({
-       data:{
+      data: {
         code,
         originalUrl: originalUrl.trim(),
         offerId: parseInt(offerId),
-        userId: parseInt(userId),  // ✅ مطلوب ولا يمكن أن يكون undefined
+        userId: parseInt(userId),
         campaignName: campaignName?.trim() || null,
         sub1: sub1?.trim() || null,
         sub2: sub2?.trim() || null,
@@ -254,10 +283,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-   
     const { searchParams } = new URL(request.url)
-     const id = searchParams.get("id")
-     const linkId = id ? parseInt(id) : NaN
+    const id = searchParams.get("id")
+    const linkId = id ? parseInt(id) : NaN
+    
     if (isNaN(linkId)) {
       return NextResponse.json({ error: "Invalid link ID" }, { status: 400 })
     }
@@ -331,7 +360,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    // ✅ جلب الـ ID من رابط الطلب بدلاً من context
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
     const linkId = id ? parseInt(id) : NaN

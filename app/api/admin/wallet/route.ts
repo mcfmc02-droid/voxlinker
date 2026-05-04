@@ -15,7 +15,7 @@ async function requireAdmin() {
     if (!user || user.role !== "ADMIN") {
       return { success: false, status: 401, error: "Unauthorized" }
     }
-    return { success: true, userId: user.id }
+    return { success: true, user }
   } catch {
     return { success: false, status: 401, error: "Unauthorized" }
   }
@@ -23,7 +23,7 @@ async function requireAdmin() {
 
 
 // ============================================================================
-// 📥 GET - LIST ALL WALLETS
+// 📥 GET - LIST WALLETS
 // ============================================================================
 
 export async function GET(request: Request) {
@@ -33,32 +33,93 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const wallets = await prisma.wallet.findMany({
-      include: {
-        user: {
-          select: { id: true, email: true, name: true }
-        }
-      },
-      orderBy: { updatedAt: "desc" }
-    })
+    const { searchParams } = new URL(request.url)
+    
+    // ✅ دعم وضع "all" لجلب كل النتائج للفلتر الحالي
+    const fetchAll = searchParams.get('all') === 'true'
+    const page = fetchAll ? 1 : parseInt(searchParams.get("page") || "1")
+    const search = searchParams.get("search") || ""
+    const userId = searchParams.get("userId")
+    
+    const pageSize = fetchAll ? 1000 : 20
+    const skip = fetchAll ? 0 : (page - 1) * pageSize
 
-    const formatted = wallets.map(w => ({
-      ...w,
-      createdAt: w.createdAt.toISOString(),
-      updatedAt: w.updatedAt.toISOString(),
+    // 🏗️ Build where clause
+    const where: any = {}
+    
+    if (userId) {
+      where.userId = parseInt(userId)
+    }
+
+    if (search) {
+      where.OR = [
+        { user: { email: { contains: search, mode: "insensitive" } } },
+        { user: { name: { contains: search, mode: "insensitive" } } },
+      ]
+    }
+
+    // 📡 Fetch wallets with user relation
+    const [wallets, total] = await Promise.all([
+      prisma.wallet.findMany({
+        where,
+        include: {
+          user: {
+            select: { 
+              id: true, 
+              email: true, 
+              name: true,
+              // ✅ يمكن إضافة country هنا إذا وجد في نموذج User
+              // country: true,
+            } 
+          }
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.wallet.count({ where }),
+    ])
+
+    // ✅ تنسيق البيانات
+    const formattedWallets = wallets.map((wallet) => ({
+      ...wallet,
+      createdAt: wallet.createdAt.toISOString(),
+      updatedAt: wallet.updatedAt.toISOString(),
     }))
 
-    return NextResponse.json({ wallets: formatted, count: formatted.length })
+    // 📊 Stats - الإحصائيات الكلية دائماً
+    const [globalTotal, globalAvailable, globalPending, globalEarned, globalWithdrawn] = await Promise.all([
+      prisma.wallet.count(),
+      prisma.wallet.aggregate({ _sum: { availableBalance: true } }),
+      prisma.wallet.aggregate({ _sum: { pendingBalance: true } }),
+      prisma.wallet.aggregate({ _sum: { totalEarned: true } }),
+      prisma.wallet.aggregate({ _sum: { withdrawnAmount: true } }),
+    ])
+
+    return NextResponse.json({
+      wallets: formattedWallets,
+      totalPages: fetchAll ? 1 : Math.ceil(total / pageSize),
+      currentPage: page,
+      total,
+      stats: {
+        totalWallets: globalTotal,
+        totalAvailable: globalAvailable._sum.availableBalance || 0,
+        totalPending: globalPending._sum.pendingBalance || 0,
+        totalEarned: globalEarned._sum.totalEarned || 0,
+        totalWithdrawn: globalWithdrawn._sum.withdrawnAmount || 0,
+      },
+      ...(userId && { userId }),
+    })
 
   } catch (error) {
     console.error("ADMIN GET WALLETS ERROR:", error)
-    return NextResponse.json({ error: "Server error", wallets: [] }, { status: 500 })
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
 
 
 // ============================================================================
-// ✏️ PATCH - ADJUST WALLET BALANCE (Vercel Safe: uses ?id= query param)
+// ✏️ PATCH - ADJUST WALLET BALANCE
 // ============================================================================
 
 export async function PATCH(request: Request) {
@@ -68,11 +129,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    // ✅ استخراج الـ ID من رابط الطلب لتجنب أخطاء Vercel
     const { searchParams } = new URL(request.url)
-    const idParam = searchParams.get("id")
-    const walletId = idParam ? parseInt(idParam) : NaN
-
+    const id = searchParams.get("id")
+    const walletId = id ? parseInt(id) : NaN
+    
     if (isNaN(walletId)) {
       return NextResponse.json({ error: "Invalid wallet ID" }, { status: 400 })
     }
@@ -80,49 +140,37 @@ export async function PATCH(request: Request) {
     const body = await request.json()
     const { type, amount } = body
 
-    if (typeof amount !== "number" || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
+    if (!type || amount === undefined || isNaN(amount) || amount <= 0) {
+      return NextResponse.json({ error: "Valid type and positive amount are required" }, { status: 400 })
     }
 
-    if (type !== "add" && type !== "deduct") {
-      return NextResponse.json({ error: "Invalid adjustment type" }, { status: 400 })
-    }
-
-    // ✅ التحقق من وجود المحفظة
+    // 🔍 Check if wallet exists
     const wallet = await prisma.wallet.findUnique({ where: { id: walletId } })
     if (!wallet) {
       return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
     }
 
-    // ✅ حساب القيم الجديدة
-    const adjustment = type === "add" ? amount : -amount
-    const newAvailable = wallet.availableBalance + adjustment
-
-    if (newAvailable < 0) {
-      return NextResponse.json({ error: "Insufficient funds for deduction" }, { status: 400 })
+    // ✨ Update balance
+    const updateData: any = {}
+    
+    if (type === "add") {
+      updateData.availableBalance = { increment: amount }
+      updateData.totalEarned = { increment: amount }
+    } else if (type === "deduct") {
+      if (amount > wallet.availableBalance) {
+        return NextResponse.json({ error: "Insufficient available balance" }, { status: 400 })
+      }
+      updateData.availableBalance = { decrement: amount }
+    } else {
+      return NextResponse.json({ error: "Invalid adjustment type" }, { status: 400 })
     }
 
-    // ✅ تحديث المحفظة
     const updated = await prisma.wallet.update({
       where: { id: walletId },
-       data: {
-        availableBalance: newAvailable,
-        totalEarned: wallet.totalEarned + (type === "add" ? amount : 0),
-        withdrawnAmount: wallet.withdrawnAmount + (type === "deduct" ? amount : 0), // في حال السحب اليدوي
-      },
+       data:updateData,
       include: {
         user: { select: { id: true, email: true, name: true } }
       }
-    })
-
-    // ✅ تسجيل العملية في AdminLog
-    await prisma.adminLog.create({
-       data: {
-        adminId: auth.userId!,
-        action: "ADJUST_WALLET",
-        targetUserId: updated.userId,
-        details: JSON.stringify({ type, amount, previousBalance: wallet.availableBalance, newBalance: updated.availableBalance }),
-      },
     })
 
     return NextResponse.json({

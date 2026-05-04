@@ -53,7 +53,7 @@ return(
 {/* ===== HERO ===== */}
 <section className="max-w-4xl mx-auto px-6 pt-20 pb-12 text-center">
 
-<h1 className="text-[34px] md:text-[44px] font-semibold text-[#0f172a] mb-4">
+<h1 className="text-[34px] md:text-[44px] font-medium text-[#0f172a] mb-4">
 Frequently Asked Questions
 </h1>
 

@@ -2,23 +2,20 @@
 
 import { useEffect, useState, Fragment, useMemo } from "react"
 import { 
-  Wallet, 
+  ChevronDown, 
+  ChevronUp, 
   Search, 
-  Loader2, 
-  User, 
-  DollarSign, 
-  TrendingUp, 
-  ArrowDownCircle, 
-  Edit3, 
-  Save, 
-  X, 
-  CheckCircle2, 
-  AlertCircle,
-  Plus,
-  Minus,
+  Filter,
+  Loader2,
   Globe2,
-  ChevronDown,
-  ChevronUp
+  Heart,
+  Trash2,
+  ExternalLink,
+  Calendar,
+  Users,
+  CheckCircle2,
+  PauseCircle,
+  Package
 } from "lucide-react"
 
 
@@ -26,44 +23,45 @@ import {
 // 📦 TYPES
 // ============================================================================
 
-type WalletData = {
+type Brand = {
+  id: number
+  name: string
+  slug: string
+  logoUrl: string | null
+  websiteUrl: string | null
+  description: string | null
+  status: "ACTIVE" | "PAUSED"
+}
+
+type FavoriteBrand = {
   id: number
   userId: number
-  availableBalance: number
-  pendingBalance: number
-  totalEarned: number
-  withdrawnAmount: number
+  brandId: number
   createdAt: string
-  updatedAt: string
   user: {
     id: number
     email: string
     name: string | null
-    country?: string | null  // ✅ يمكن إضافته لاحقاً إذا وجد في نموذج User
   }
+  brand: Brand
 }
 
-type GroupedWallets = {
+type GroupedFavorites = {
   country: string
-  wallets: WalletData[]
+  favorites: FavoriteBrand[]
   users: {
     userId: number
     userName: string
     userEmail: string
-    wallet: WalletData
+    favorites: FavoriteBrand[]
     stats: {
-      available: number
-      pending: number
-      earned: number
-      withdrawn: number
+      total: number
+      active: number
     }
   }[]
   stats: {
     total: number
-    available: number
-    pending: number
-    earned: number
-    withdrawn: number
+    active: number
   }
 }
 
@@ -72,14 +70,13 @@ type GroupedWallets = {
 // 🎨 MAIN PAGE COMPONENT
 // ============================================================================
 
-export default function AdminWalletPage() {
-  const [wallets, setWallets] = useState<WalletData[]>([])
+export default function AdminFavoriteBrandsPage() {
+  const [favorites, setFavorites] = useState<FavoriteBrand[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [expandedWallet, setExpandedWallet] = useState<number | null>(null)
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "PAUSED">("ALL")
   const [expandedCountry, setExpandedCountry] = useState<string | null>(null)
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
-  const [editData, setEditData] = useState<Record<number, { adjustAmount: string; adjustType: "add" | "deduct" }>>({})
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   // ✅ Pagination مستقل لكل مستخدم
@@ -94,36 +91,29 @@ export default function AdminWalletPage() {
 
   useEffect(() => {
     fetchGlobalData()
-  }, [search])
+  }, [search, filterStatus])
 
 
   const fetchGlobalData = async () => {
     try {
       setLoading(true)
       
-      // ✅ نطلب كل البيانات للفلترة الحالية (بدون pagination عالمي)
       const queryParams = new URLSearchParams({
         all: 'true',
         ...(search && { search }),
+        ...(filterStatus !== "ALL" && { status: filterStatus }),
       })
 
-      const res = await fetch(`/api/admin/wallet?${queryParams}`, {
+      const res = await fetch(`/api/admin/favorite-brands?${queryParams}`, {
         credentials: "include",
       })
 
-      if (!res.ok) throw new Error("Failed to fetch wallets")
+      if (!res.ok) throw new Error("Failed to fetch favorites")
       
       const data = await res.json()
-      setWallets(data.wallets || [])
-      
-      // ✅ تهيئة editData لكل محفظة
-      const initialEditData: Record<number, { adjustAmount: string; adjustType: "add" | "deduct" }> = {}
-      ;(data.wallets || []).forEach((w: WalletData) => {
-        initialEditData[w.id] = { adjustAmount: "0", adjustType: "add" }
-      })
-      setEditData(initialEditData)
+      setFavorites(data.favorites || [])
     } catch (error) {
-      console.error("Error fetching wallets:", error)
+      console.error("Error fetching favorites:", error)
     } finally {
       setLoading(false)
     }
@@ -131,10 +121,10 @@ export default function AdminWalletPage() {
 
 
   // ============================================================================
-  // 🔄 FETCH USER WALLETS (للتصفح المستقل داخل كل مستخدم)
+  // 🔄 FETCH USER FAVORITES (للتصفح المستقل داخل كل مستخدم)
   // ============================================================================
 
-  const fetchUserWallets = async (userKey: string, userId: number, page: number) => {
+  const fetchUserFavorites = async (userKey: string, userId: number, page: number) => {
     try {
       setLoadingUser(userKey)
       
@@ -143,24 +133,25 @@ export default function AdminWalletPage() {
         page: page.toString(),
         pageSize: '20',
         ...(search && { search }),
+        ...(filterStatus !== "ALL" && { status: filterStatus }),
       })
 
-      const res = await fetch(`/api/admin/wallet?${queryParams}`, {
+      const res = await fetch(`/api/admin/favorite-brands?${queryParams}`, {
         credentials: "include",
       })
 
-      if (!res.ok) throw new Error("Failed to fetch user wallets")
+      if (!res.ok) throw new Error("Failed to fetch user favorites")
       
       const data = await res.json()
       setUserTotalPages(prev => ({ ...prev, [userKey]: data.totalPages || 1 }))
       
       return {
-        wallets: data.wallets || [],
+        favorites: data.favorites || [],
         totalPages: data.totalPages || 1
       }
     } catch (error) {
-      console.error("Error fetching user wallets:", error)
-      return { wallets: [], totalPages: 1 }
+      console.error("Error fetching user favorites:", error)
+      return { favorites: [], totalPages: 1 }
     } finally {
       setLoadingUser(null)
     }
@@ -171,37 +162,22 @@ export default function AdminWalletPage() {
   // ⚡ ACTIONS
   // ============================================================================
 
-  const updateWalletBalance = async (walletId: number) => {
-    const key = `adjust-${walletId}`
+  const removeFavorite = async (favoriteId: number, userId: number) => {
+    if (!confirm("Are you sure you want to remove this favorite?")) return
+
+    const key = `remove-${favoriteId}`
     setActionLoading(key)
 
     try {
-      const edit = editData[walletId] || { adjustAmount: "0", adjustType: "add" }
-      const amount = parseFloat(edit.adjustAmount || "0")
-      
-      if (isNaN(amount) || amount <= 0) {
-        alert("Please enter a valid positive amount")
-        return
-      }
-
-      const res = await fetch(`/api/admin/wallet?id=${walletId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      await fetch(`/api/admin/favorite-brands?id=${favoriteId}`, {
+        method: "DELETE",
         credentials: "include",
-        body: JSON.stringify({
-          type: edit.adjustType,
-          amount,
-        }),
       })
-
-      if (!res.ok) throw new Error("Failed to update wallet")
       
-      // ✅ إعادة جلب البيانات العالمية لتحديث التجميع
-      fetchGlobalData()
-      setExpandedWallet(null)
+      // ✅ تحديث الحالة محلياً
+      setFavorites(prev => prev.filter(f => f.id !== favoriteId))
     } catch (error) {
-      console.error("Error updating wallet:", error)
-      alert("Failed to process balance adjustment")
+      console.error("Error removing favorite:", error)
     } finally {
       setActionLoading(null)
     }
@@ -212,79 +188,79 @@ export default function AdminWalletPage() {
   // 🎨 GROUPING LOGIC
   // ============================================================================
 
-  const groupedWallets = useMemo((): GroupedWallets[] => {
+  const groupedFavorites = useMemo((): GroupedFavorites[] => {
     // 🔹 فلترة أولية
-    let filtered = wallets
+    let filtered = favorites
+    if (filterStatus !== "ALL") {
+      filtered = filtered.filter(f => f.brand.status === filterStatus)
+    }
+
     if (search) {
       const s = search.toLowerCase()
-      filtered = filtered.filter(w => 
-        w.user.email.toLowerCase().includes(s) ||
-        w.user.name?.toLowerCase().includes(s)
+      filtered = filtered.filter(f => 
+        f.brand.name.toLowerCase().includes(s) ||
+        f.brand.slug.toLowerCase().includes(s) ||
+        f.user.email.toLowerCase().includes(s) ||
+        f.user.name?.toLowerCase().includes(s)
       )
     }
 
     // 🔹 تجميع حسب الدولة (نستخدم "All Countries" كمؤشر - يمكن تعديله لاحقاً)
-    const byCountry: Record<string, WalletData[]> = {}
-    filtered.forEach(wallet => {
-      // ✅ يمكن تغيير هذا لجلب الدولة الفعلية من wallet.user.country إذا توفرت
-      const country = wallet.user.country || "All Countries"
+    const byCountry: Record<string, FavoriteBrand[]> = {}
+    filtered.forEach(fav => {
+      const country = "All Countries" // ✅ يمكن جلب الدولة الفعلية من نموذج المستخدم إذا لزم
       if (!byCountry[country]) byCountry[country] = []
-      byCountry[country].push(wallet)
+      byCountry[country].push(fav)
     })
 
     // 🔹 تجميع فرعي حسب المستخدم داخل كل دولة
     return Object.entries(byCountry)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([country, countryWallets]) => {
-        const byUser: Record<number, WalletData> = {}
+      .map(([country, countryFavorites]) => {
+        const byUser: Record<number, FavoriteBrand[]> = {}
         
-        countryWallets.forEach(wallet => {
-          const userId = wallet.userId
-          // نحتفظ بأحدث نسخة فقط (في حال وجود تكرار)
-          byUser[userId] = wallet
+        countryFavorites.forEach(fav => {
+          const userId = fav.userId
+          if (!byUser[userId]) byUser[userId] = []
+          byUser[userId].push(fav)
         })
 
-        const users = Object.entries(byUser).map(([userIdStr, wallet]) => {
+        const users = Object.entries(byUser).map(([userIdStr, userFavorites]) => {
           const userId = parseInt(userIdStr)
+          const firstFav = userFavorites[0]
+          
+          const userStats = {
+            total: userFavorites.length,
+            active: userFavorites.filter(f => f.brand.status === "ACTIVE").length
+          }
           
           return {
             userId,
-            userName: wallet.user.name || wallet.user.email,
-            userEmail: wallet.user.email,
-            wallet,
-            stats: {
-              available: wallet.availableBalance,
-              pending: wallet.pendingBalance,
-              earned: wallet.totalEarned,
-              withdrawn: wallet.withdrawnAmount
-            }
+            userName: firstFav.user.name || firstFav.user.email,
+            userEmail: firstFav.user.email,
+            favorites: userFavorites,
+            stats: userStats
           }
-        }).sort((a, b) => b.stats.available - a.stats.available) // الأغنى أولاً
+        }).sort((a, b) => b.stats.total - a.stats.total)
 
         const countryStats = {
-          total: countryWallets.length,
-          available: countryWallets.reduce((sum, w) => sum + w.availableBalance, 0),
-          pending: countryWallets.reduce((sum, w) => sum + w.pendingBalance, 0),
-          earned: countryWallets.reduce((sum, w) => sum + w.totalEarned, 0),
-          withdrawn: countryWallets.reduce((sum, w) => sum + w.withdrawnAmount, 0),
+          total: countryFavorites.length,
+          active: countryFavorites.filter(f => f.brand.status === "ACTIVE").length
         }
 
         return {
           country,
-          wallets: countryWallets,
+          favorites: countryFavorites,
           users,
           stats: countryStats
         }
       })
-  }, [wallets, search])
+  }, [favorites, search, filterStatus])
 
 
   // ============================================================================
   // 🎨 HELPER FUNCTIONS
   // ============================================================================
-
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
 
   const toggleCountry = (country: string) => {
     setExpandedCountry(expandedCountry === country ? null : country)
@@ -299,27 +275,17 @@ export default function AdminWalletPage() {
     } else {
       setExpandedUser(key)
       
-      // ✅ عند فتح مستخدم، جلب أول صفحة من محافظه إذا لم تكن محملة
+      // ✅ عند فتح مستخدم، جلب أول صفحة من مفضلاته إذا لم تكن محملة
       if (!userPages[key]) {
         setUserPages(prev => ({ ...prev, [key]: 1 }))
-        fetchUserWallets(key, userId, 1)
+        fetchUserFavorites(key, userId, 1)
       }
     }
   }
 
   const changeUserPage = (userKey: string, userId: number, newPage: number) => {
     setUserPages(prev => ({ ...prev, [userKey]: newPage }))
-    fetchUserWallets(userKey, userId, newPage)
-  }
-
-  const updateEditData = (walletId: number, field: "adjustAmount" | "adjustType", value: string) => {
-    setEditData(prev => ({
-      ...prev,
-      [walletId]: {
-        ...(prev[walletId] || { adjustAmount: "0", adjustType: "add" }),
-        [field]: value
-      }
-    }))
+    fetchUserFavorites(userKey, userId, newPage)
   }
 
 
@@ -332,7 +298,7 @@ export default function AdminWalletPage() {
       <div className="min-h-screen p-10 flex items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Loading wallets...
+          Loading favorite brands...
         </div>
       </div>
     )
@@ -350,8 +316,8 @@ export default function AdminWalletPage() {
         {/* ================= HEADER ================= */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">Wallet Management</h1>
-            <p className="text-sm text-gray-500 mt-1">Monitor balances, adjust funds, and track earnings</p>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">Favorite Brands</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage user favorite brands and preferences</p>
           </div>
         </div>
 
@@ -359,65 +325,85 @@ export default function AdminWalletPage() {
         {/* ================= STATS CARDS ================= */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard 
-            title="Total Wallets" 
-            value={groupedWallets.reduce((sum, g) => sum + g.stats.total, 0)} 
-            icon={<Wallet className="w-5 h-5 text-gray-500" />} 
+            title="Total Favorites" 
+            value={groupedFavorites.reduce((sum, g) => sum + g.stats.total, 0)} 
+            icon={<Heart className="w-5 h-5 text-pink-600" />} 
           />
           <StatCard 
-            title="Available Balance" 
-            value={formatCurrency(groupedWallets.reduce((sum, g) => sum + g.stats.available, 0))} 
+            title="Active Brands" 
+            value={groupedFavorites.reduce((sum, g) => sum + g.stats.active, 0)} 
             highlight 
-            icon={<DollarSign className="w-5 h-5 text-green-600" />} 
+            icon={<Package className="w-5 h-5 text-green-600" />} 
           />
           <StatCard 
-            title="Pending Balance" 
-            value={formatCurrency(groupedWallets.reduce((sum, g) => sum + g.stats.pending, 0))} 
-            icon={<AlertCircle className="w-5 h-5 text-yellow-600" />} 
+            title="Unique Users" 
+            value={groupedFavorites.reduce((sum, g) => sum + g.users.length, 0)} 
+            icon={<Users className="w-5 h-5 text-blue-600" />} 
           />
           <StatCard 
-            title="Total Earned" 
-            value={formatCurrency(groupedWallets.reduce((sum, g) => sum + g.stats.earned, 0))} 
-            icon={<TrendingUp className="w-5 h-5 text-blue-600" />} 
+            title="Countries" 
+            value={groupedFavorites.length} 
+            icon={<Globe2 className="w-5 h-5 text-purple-600" />} 
           />
         </div>
 
 
-        {/* ================= SEARCH ================= */}
+        {/* ================= FILTERS + SEARCH ================= */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 p-4 shadow-sm">
-          <div className="relative">
-            <input
-              placeholder="Search by email or name..."
-              value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+          <div className="flex flex-col md:flex-row gap-4">
+            
+            {/* Search */}
+            <div className="relative flex-1">
+              <input
+                placeholder="Search brands, users, or slugs..."
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                className="
+                  w-full pl-10 pr-4 py-2.5 text-sm
+                  bg-white border border-gray-200 rounded-xl
+                  outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
+                  transition-all duration-200
+                "
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as any)}
               className="
-                w-full pl-10 pr-4 py-2.5 text-sm
+                px-4 py-2.5 text-sm
                 bg-white border border-gray-200 rounded-xl
                 outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]
-                transition-all duration-200
+                cursor-pointer transition-all duration-200
               "
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            >
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="PAUSED">Paused</option>
+            </select>
           </div>
         </div>
 
 
-        {/* ================= GROUPED WALLETS SECTIONS ================= */}
+        {/* ================= GROUPED FAVORITES SECTIONS ================= */}
         <div className="space-y-6">
-          {groupedWallets.length === 0 ? (
+          {groupedFavorites.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
-              <Wallet className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-              <p>No wallets found</p>
-              {search && (
+              <Heart className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+              <p>No favorite brands found</p>
+              {(search || filterStatus !== "ALL") && (
                 <button 
-                  onClick={() => setSearch("")}
+                  onClick={() => { setSearch(""); setFilterStatus("ALL") }}
                   className="mt-2 text-sm text-[#ff9a6c] hover:underline cursor-pointer"
                 >
-                  Clear search →
+                  Clear filters →
                 </button>
               )}
             </div>
           ) : (
-            groupedWallets.map((group) => (
+            groupedFavorites.map((group) => (
               <div key={group.country} className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 
                 {/* Country Header */}
@@ -430,7 +416,7 @@ export default function AdminWalletPage() {
                     <div className="text-left">
                       <h3 className="font-semibold text-gray-900">{group.country}</h3>
                       <p className="text-xs text-gray-500">
-                        {group.stats.total} wallets • {formatCurrency(group.stats.available)} available
+                        {group.stats.total} favorites • {group.users.length} users • {group.stats.active} active brands
                       </p>
                     </div>
                   </div>
@@ -467,26 +453,25 @@ export default function AdminWalletPage() {
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
-                                <span className="text-green-600">{formatCurrency(userGroup.stats.available)}</span>
-                                <span>•</span>
-                                <span className="text-yellow-600">{formatCurrency(userGroup.stats.pending)} pending</span>
+                                <span>{userGroup.stats.total} favorites</span>
+                                <span className="text-green-600">• {userGroup.stats.active} active</span>
                               </div>
                               <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isUserExpanded ? "rotate-180" : ""}`} />
                             </div>
                           </button>
 
-                          {/* User Wallet Table with Independent Pagination */}
+                          {/* User Favorites Table with Independent Pagination */}
                           {isUserExpanded && (
                             <div className="space-y-4">
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm min-w-[600px]">
                                   <thead className="text-xs text-gray-400 uppercase tracking-wide bg-gray-50/80">
                                     <tr>
-                                      <th className="px-4 sm:px-6 py-3 text-left font-medium">Available</th>
-                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden sm:table-cell">Pending</th>
-                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden md:table-cell">Total Earned</th>
-                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden lg:table-cell">Withdrawn</th>
-                                      <th className="px-4 sm:px-6 py-3 text-right font-medium w-[100px]">Actions</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium">Brand</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden sm:table-cell">Website</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium">Status</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden md:table-cell">Added</th>
+                                      <th className="px-4 sm:px-6 py-3 text-right font-medium w-[80px]">Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -494,94 +479,95 @@ export default function AdminWalletPage() {
                                       <tr>
                                         <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
                                           <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                          <span className="text-xs ml-2">Loading wallet...</span>
+                                          <span className="text-xs ml-2">Loading favorites...</span>
                                         </td>
                                       </tr>
                                     ) : (
-                                      // ✅ نعرض المحفظة الحالية فقط (واحدة لكل مستخدم)
-                                      // لكن نحتفظ بـ pagination للهيكلية الموحدة
-                                      userGroup.wallet && (
-                                        <Fragment key={userGroup.wallet.id}>
+                                      userGroup.favorites.slice((currentPage - 1) * 20, currentPage * 20).map((fav) => (
+                                        <Fragment key={fav.id}>
                                           <tr className="border-t border-gray-100 hover:bg-gray-50/60 transition-all duration-150">
-                                            <td className="px-4 sm:px-6 py-4 font-semibold text-green-700">
-                                              {formatCurrency(userGroup.wallet.availableBalance)}
+                                            <td className="px-4 sm:px-6 py-4">
+                                              <div className="flex items-center gap-3">
+                                                {fav.brand.logoUrl ? (
+                                                  <img
+                                                    src={fav.brand.logoUrl}
+                                                    alt={fav.brand.name}
+                                                    className="w-10 h-10 rounded-lg object-contain bg-gray-50 border border-gray-100"
+                                                  />
+                                                ) : (
+                                                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400">
+                                                    <Package className="w-5 h-5" />
+                                                  </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                  <p className="font-medium text-gray-900 truncate max-w-[150px]">{fav.brand.name}</p>
+                                                  <p className="text-xs text-gray-400 truncate">@{fav.brand.slug}</p>
+                                                </div>
+                                              </div>
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 text-yellow-700 hidden sm:table-cell">
-                                              {formatCurrency(userGroup.wallet.pendingBalance)}
+
+                                            <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
+                                              {fav.brand.websiteUrl ? (
+                                                <a
+                                                  href={fav.brand.websiteUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-sm text-[#ff9a6c] hover:underline truncate block max-w-[150px]"
+                                                >
+                                                  {fav.brand.websiteUrl.replace("https://", "")}
+                                                </a>
+                                              ) : (
+                                                <span className="text-xs text-gray-400">—</span>
+                                              )}
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 text-blue-700 hidden md:table-cell">
-                                              {formatCurrency(userGroup.wallet.totalEarned)}
+
+                                            <td className="px-4 sm:px-6 py-4">
+                                              <StatusBadge status={fav.brand.status} />
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 text-gray-600 hidden lg:table-cell">
-                                              {formatCurrency(userGroup.wallet.withdrawnAmount)}
+
+                                            <td className="px-4 sm:px-6 py-4 text-gray-400 text-xs whitespace-nowrap hidden md:table-cell">
+                                              {new Date(fav.createdAt).toLocaleDateString()}
                                             </td>
+
                                             <td className="px-4 sm:px-6 py-4 text-right">
                                               <button
-                                                onClick={() => setExpandedWallet(expandedWallet === userGroup.wallet.id ? null : userGroup.wallet.id)}
-                                                className="p-2 rounded-lg hover:bg-gray-200 transition cursor-pointer text-gray-500"
-                                                title="Adjust balance"
+                                                onClick={() => removeFavorite(fav.id, userGroup.userId)}
+                                                disabled={actionLoading === `remove-${fav.id}`}
+                                                className="p-2 rounded-lg hover:bg-red-50 transition cursor-pointer text-gray-400 hover:text-red-500 disabled:opacity-50"
+                                                title="Remove favorite"
                                               >
-                                                {expandedWallet === userGroup.wallet.id ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                                                {actionLoading === `remove-${fav.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <Trash2 className="w-4 h-4" />
+                                                )}
                                               </button>
                                             </td>
                                           </tr>
 
-                                          {/* Expanded Edit Row */}
-                                          {expandedWallet === userGroup.wallet.id && (
-                                            <tr className="bg-gray-50/80 border-t border-gray-100">
-                                              <td colSpan={5} className="px-4 sm:px-6 py-6">
-                                                <div className="max-w-2xl mx-auto space-y-4">
-                                                  <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                                    <DollarSign className="w-4 h-4" />
-                                                    Adjust Balance for {userGroup.userName}
-                                                  </h4>
-                                                  
-                                                  <div className="flex gap-3">
-                                                    <button
-                                                      onClick={() => updateEditData(userGroup.wallet.id, "adjustType", "add")}
-                                                      className={`flex-1 py-2 text-sm rounded-xl border transition cursor-pointer flex items-center justify-center gap-2
-                                                        ${(editData[userGroup.wallet.id]?.adjustType || "add") === "add" ? "bg-green-100 border-green-300 text-green-700" : "bg-white border-gray-200 text-gray-600"}`}
-                                                    >
-                                                      <Plus className="w-4 h-4" /> Add Funds
-                                                    </button>
-                                                    <button
-                                                      onClick={() => updateEditData(userGroup.wallet.id, "adjustType", "deduct")}
-                                                      className={`flex-1 py-2 text-sm rounded-xl border transition cursor-pointer flex items-center justify-center gap-2
-                                                        ${(editData[userGroup.wallet.id]?.adjustType || "add") === "deduct" ? "bg-red-100 border-red-300 text-red-700" : "bg-white border-gray-200 text-gray-600"}`}
-                                                    >
-                                                      <Minus className="w-4 h-4" /> Deduct Funds
-                                                    </button>
-                                                  </div>
-
-                                                  <div className="flex gap-3">
-                                                    <input
-                                                      type="number"
-                                                      placeholder="Amount (USD)"
-                                                      value={editData[userGroup.wallet.id]?.adjustAmount || "0"}
-                                                      onChange={(e) => updateEditData(userGroup.wallet.id, "adjustAmount", e.target.value)}
-                                                      className="flex-1 px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#ff9a6c]/30 focus:border-[#ff9a6c]"
-                                                    />
-                                                    <button
-                                                      onClick={() => updateWalletBalance(userGroup.wallet.id)}
-                                                      disabled={actionLoading === `adjust-${userGroup.wallet.id}`}
-                                                      className="px-6 py-2.5 text-sm rounded-xl bg-gradient-to-r from-[#ffb48a] to-[#ff9a6c] text-white hover:opacity-95 transition cursor-pointer disabled:opacity-60 flex items-center gap-2"
-                                                    >
-                                                      {actionLoading === `adjust-${userGroup.wallet.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                                      {actionLoading === `adjust-${userGroup.wallet.id}` ? "Processing..." : "Apply"}
-                                                    </button>
-                                                  </div>
+                                          {/* Expanded Details Row */}
+                                          <tr className="bg-gray-50/60 border-t border-gray-100 hidden">
+                                            <td colSpan={5} className="px-4 sm:px-6 py-4">
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                  <p className="text-xs text-gray-500 mb-1">Description</p>
+                                                  <p className="text-gray-700">{fav.brand.description || "No description"}</p>
                                                 </div>
-                                              </td>
-                                            </tr>
-                                          )}
+                                                <div>
+                                                  <p className="text-xs text-gray-500 mb-1">Favorite Added</p>
+                                                  <p className="text-gray-700">{new Date(fav.createdAt).toLocaleString()}</p>
+                                                </div>
+                                              </div>
+                                            </td>
+                                          </tr>
                                         </Fragment>
-                                      )
+                                      ))
                                     )}
                                   </tbody>
                                 </table>
                               </div>
                               
-                              {/* ✅ Pagination خاص بهذا المستخدم فقط (مخفي إذا كان هناك محفظة واحدة) */}
+                              {/* ✅ Pagination خاص بهذا المستخدم فقط */}
                               {totalPages > 1 && (
                                 <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg border border-gray-100">
                                   <button
@@ -631,7 +617,17 @@ export default function AdminWalletPage() {
 // 🧩 REUSABLE UI COMPONENTS
 // ============================================================================
 
-function StatCard({ title, value, icon, highlight = false }: { title: string; value: string | number; icon: React.ReactNode; highlight?: boolean }) {
+function StatCard({
+  title,
+  value,
+  icon,
+  highlight = false,
+}: {
+  title: string
+  value: number
+  icon: React.ReactNode
+  highlight?: boolean
+}) {
   return (
     <div className={`
       bg-white/80 backdrop-blur rounded-2xl p-4 sm:p-5 border
@@ -645,8 +641,26 @@ function StatCard({ title, value, icon, highlight = false }: { title: string; va
         <div className="text-gray-500">{icon}</div>
       </div>
       <p className={`text-xl sm:text-2xl font-semibold mt-2 ${highlight ? "text-[#ff9a6c]" : "text-gray-900"}`}>
-        {value}
+        {value.toLocaleString()}
       </p>
     </div>
+  )
+}
+
+function StatusBadge({ status }: { status: "ACTIVE" | "PAUSED" }) {
+  const styles = {
+    ACTIVE: "bg-green-100 text-green-700 border-green-200",
+    PAUSED: "bg-gray-100 text-gray-600 border-gray-200",
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${styles[status]}`}>
+      {status === "ACTIVE" ? (
+        <CheckCircle2 className="w-3.5 h-3.5" />
+      ) : (
+        <PauseCircle className="w-3.5 h-3.5" />
+      )}
+      <span className="hidden sm:inline">{status === "ACTIVE" ? "Active" : "Paused"}</span>
+    </span>
   )
 }

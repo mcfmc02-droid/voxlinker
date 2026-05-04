@@ -4,11 +4,6 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserFromSession } from "@/lib/auth"
 
-
-// ============================================================================
-// 🔐 AUTH HELPER
-// ============================================================================
-
 async function requireAdmin() {
   try {
     const user = await getUserFromSession()
@@ -21,62 +16,69 @@ async function requireAdmin() {
   }
 }
 
-
-// ============================================================================
-// 📥 GET - LIST TRANSACTIONS
-// ============================================================================
-
 export async function GET(request: Request) {
   try {
     const auth = await requireAdmin()
-    if (!auth.success) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status })
-    }
+    if (!auth.success) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
     const { searchParams } = new URL(request.url)
+    const fetchAll = searchParams.get('all') === 'true'
+    const page = fetchAll ? 1 : parseInt(searchParams.get("page") || "1")
     const status = searchParams.get("status")
     const type = searchParams.get("type")
     const search = searchParams.get("search")
+    const userId = searchParams.get("userId")
+    
+    const pageSize = fetchAll ? 1000 : 20
+    const skip = fetchAll ? 0 : (page - 1) * pageSize
 
-    // 🏗️ Build where clause
     const where: any = {}
+    if (userId) where.wallet = { userId: parseInt(userId) }
     if (status && status !== "ALL") where.status = status
-    if (type && type !== "ALL") where.type = type
+    if (type && type !== "ALL") where.type = { contains: type, mode: "insensitive" }
+    
     if (search) {
       where.OR = [
-        { id: { equals: parseInt(search) || 0 } },
-        { referenceId: { equals: parseInt(search) || 0 } },
-        { description: { contains: search, mode: "insensitive" } }
+        { referenceId: { equals: parseInt(search) || undefined } },
+        { description: { contains: search, mode: "insensitive" } },
+        { wallet: { user: { email: { contains: search, mode: "insensitive" } } } },
+        { wallet: { user: { name: { contains: search, mode: "insensitive" } } } },
       ]
     }
 
-    // 📡 Fetch transactions with relations
-    const transactions = await prisma.transaction.findMany({
-      where,
-      include: {
-        wallet: {
-          include: {
-            user: {
-              select: { id: true, email: true, name: true }
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        include: {
+          wallet: {
+            select: {
+              id: true,
+              user: { select: { id: true, email: true, name: true, country: true } }
             }
           }
-        }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100 // Limit for performance
-    })
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.transaction.count({ where }),
+    ])
 
-    return NextResponse.json({ 
-      transactions: transactions.map(t => ({
-        ...t,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
-      })),
-      count: transactions.length
+    const formatted = transactions.map(t => ({
+      ...t,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    }))
+
+    return NextResponse.json({
+      transactions: formatted,
+      totalPages: fetchAll ? 1 : Math.ceil(total / pageSize),
+      currentPage: page,
+      total,
+      ...(userId && { userId }),
     })
 
   } catch (error) {
-    console.error("ADMIN GET TRANSACTIONS ERROR:", error)
-    return NextResponse.json({ error: "Server error", transactions: [] }, { status: 500 })
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }

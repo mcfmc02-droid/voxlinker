@@ -4,6 +4,10 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserFromSession } from "@/lib/auth"
 
+// ============================================================================
+// 🔐 AUTH HELPER
+// ============================================================================
+
 async function requireAdmin() {
   try {
     const user = await getUserFromSession()
@@ -16,6 +20,10 @@ async function requireAdmin() {
   }
 }
 
+// ============================================================================
+// 📡 GET - CLICKS WITH COUNTRY & DEVICE
+// ============================================================================
+
 export async function GET(request: Request) {
   try {
     const auth = await requireAdmin()
@@ -24,15 +32,30 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
+    
+    // ✅ دعم وضع "all" لجلب كل النتائج للفلتر الحالي (للتجميع)
+    const fetchAll = searchParams.get('all') === 'true'
+    const page = fetchAll ? 1 : parseInt(searchParams.get("page") || "1")
     const search = searchParams.get("search") || ""
     const type = searchParams.get("type")
     
-    const pageSize = 20
-    const skip = (page - 1) * pageSize
+    // ✅ دعم الفلترة حسب المستخدم للتصفح المستقل
+    const userId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!) : null
+    const affiliateLinkId = searchParams.get('affiliateLinkId') ? parseInt(searchParams.get('affiliateLinkId')!) : null
+    
+    const pageSize = fetchAll ? 1000 : 20 // ✅ عند all=true، نجل
+    const skip = fetchAll ? 0 : (page - 1) * pageSize
 
     // 🏗️ Build where clause
     const where: any = {}
+
+    // ✅ فلترة حسب المستخدم إذا طُلب (للتصفح المستقل)
+    if (userId) {
+      where.userId = userId
+    } else if (affiliateLinkId) {
+      where.affiliateLinkId = affiliateLinkId
+      where.userId = null // ✅ للنقرات المباشرة من الأدمن
+    }
 
     if (search) {
       where.OR = [
@@ -40,6 +63,7 @@ export async function GET(request: Request) {
         { ipAddress: { contains: search, mode: "insensitive" } },
         { country: { contains: search, mode: "insensitive" } },
         { city: { contains: search, mode: "insensitive" } },
+        { device: { contains: search, mode: "insensitive" } },
         { browser: { contains: search, mode: "insensitive" } },
         { os: { contains: search, mode: "insensitive" } },
         { sub1: { contains: search, mode: "insensitive" } },
@@ -54,11 +78,41 @@ export async function GET(request: Request) {
       where.blocked = false
     }
 
-    // 📡 Fetch clicks
+    // 📡 Fetch clicks with explicit fields
     const [clicks, total] = await Promise.all([
       prisma.click.findMany({
         where,
-        include: {
+        select: {
+          // ✅ الحقول الأساسية
+          id: true,
+          clickId: true,
+          ipAddress: true,
+          country: true,
+          city: true,
+          device: true,
+          browser: true,
+          os: true,
+          isBot: true,
+          isDuplicate: true,
+          fraudScore: true,
+          blocked: true,
+          createdAt: true,
+          sessionId: true,
+          fingerprint: true,
+          sub1: true,
+          sub2: true,
+          sub3: true,
+          sub4: true,
+          sub5: true,
+          utmSource: true,
+          utmMedium: true,
+          utmCampaign: true,
+          utmContent: true,
+          utmTerm: true,
+          referrer: true,
+          userAgent: true,
+          
+          // ✅ العلاقات
           offer: {
             select: { id: true, name: true, brand: { select: { name: true } } }
           },
@@ -76,30 +130,39 @@ export async function GET(request: Request) {
       prisma.click.count({ where }),
     ])
 
-    // 📊 Stats
-    const [totalClicks, botClicks, highFraud] = await Promise.all([
+    // 📊 Stats - ✅ الإحصائيات الكلية دائماً (بدون فلتر)
+    const [globalTotalClicks, globalBotClicks, globalHighFraud] = await Promise.all([
       prisma.click.count(),
       prisma.click.count({ where: { isBot: true } }),
       prisma.click.count({ where: { fraudScore: { gte: 70 } } }),
     ])
 
     const stats = {
-      totalClicks,
-      organicClicks: totalClicks - botClicks,
-      botClicks,
-      highFraud
+      totalClicks: globalTotalClicks,
+      organicClicks: globalTotalClicks - globalBotClicks,
+      botClicks: globalBotClicks,
+      highFraud: globalHighFraud
     }
 
+    // ✅ تنسيق البيانات مع قيم افتراضية
     const formattedClicks = clicks.map((click) => ({
       ...click,
       createdAt: click.createdAt.toISOString(),
+      country: click.country?.trim() || "Unknown",
+      device: click.device?.trim() || "unknown",
+      browser: click.browser?.trim() || "Unknown",
+      os: click.os?.trim() || "Unknown",
+      city: click.city?.trim() || "Unknown",
     }))
 
     return NextResponse.json({
       clicks: formattedClicks,
-      totalPages: Math.ceil(total / pageSize),
+      totalPages: fetchAll ? 1 : Math.ceil(total / pageSize),
       currentPage: page,
       stats,
+      // ✅ معلومات إضافية للتصفح المستقل
+      ...(userId && { userId }),
+      ...(affiliateLinkId && { affiliateLinkId }),
     })
 
   } catch (error) {

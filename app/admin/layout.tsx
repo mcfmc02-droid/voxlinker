@@ -22,7 +22,16 @@ import {
   Newspaper,
   Menu,      // ✅ أيقونة القائمة للموبايل
   X,
-  Megaphone,         // ✅ أيقونة الإغلاق للموبايل
+  Megaphone,  // ✅ أيقونة الإغلاق للموبايل
+  Heart,
+  Sparkles,
+  Key,
+  Webhook,
+  ShieldAlert,
+  ScrollText,
+  Percent,
+    ArrowUpFromLine,
+         
 } from "lucide-react"
 import { useMode } from "@/hooks/useMode"
 import { ToastContextProvider } from "@/contexts/ToastContext"
@@ -79,12 +88,17 @@ export default function AdminLayout({
     { name: "Payment Methods", href: "/admin/payment-methods", icon: HandCoins },
     { name: "Tax Forms", href: "/admin/tax-forms", icon: FileText },
     { name: "Wallet", href: "/admin/wallet", icon: Wallet },
-    { name: "Withdrawals", href: "/admin/withdrawals", icon: DollarSign },
+    { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpFromLine },
     { name: "Conversions", href: "/admin/conversions", icon: Target },
     { name: "Transactions", href: "/admin/transactions", icon: Receipt },
+    { name: "Commission Overrides", href: "/admin/commission-overrides", icon: Percent },
     { name: "Clicks", href: "/admin/clicks", icon: MousePointerClick },
-    { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
-    { name: "Logs", href: "/admin/logs", icon: FileText },
+    { name: "Campaigns", href: "/admin/campaigns", icon: Sparkles },
+    { name: "Favorite Brands", href: "/admin/favorite-brands", icon: Heart },
+    { name: "API Tokens", href: "/admin/api-tokens", icon: Key },
+    { name: "Postback Logs", href: "/admin/postback-logs", icon: Webhook },
+    { name: "Fraud Logs", href: "/admin/fraud-logs", icon: ShieldAlert },
+    { name: "Logs", href: "/admin/logs", icon: ScrollText },
   ]
 
   return (

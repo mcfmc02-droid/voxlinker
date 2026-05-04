@@ -23,7 +23,7 @@ async function requireAdmin() {
 
 
 // ============================================================================
-// 📥 GET - LIST PAYMENT METHODS
+// 📥 GET - LIST API TOKENS
 // ============================================================================
 
 export async function GET(request: Request) {
@@ -39,8 +39,6 @@ export async function GET(request: Request) {
     const fetchAll = searchParams.get('all') === 'true'
     const page = fetchAll ? 1 : parseInt(searchParams.get("page") || "1")
     const search = searchParams.get("search") || ""
-    const status = searchParams.get("status")
-    const type = searchParams.get("type")
     const userId = searchParams.get("userId")
     
     const pageSize = fetchAll ? 1000 : 20
@@ -48,138 +46,155 @@ export async function GET(request: Request) {
 
     // 🏗️ Build where clause
     const where: any = {}
-    
+
+    // ✅ فلترة حسب المستخدم إذا طُلب
     if (userId) {
       where.userId = parseInt(userId)
-    }
-    
-    if (status && status !== "ALL") {
-      where.status = status
-    }
-    
-    if (type && type !== "ALL") {
-      where.type = type
     }
 
     if (search) {
       where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { token: { contains: search, mode: "insensitive" } },
         { user: { email: { contains: search, mode: "insensitive" } } },
         { user: { name: { contains: search, mode: "insensitive" } } },
-        { paypalEmail: { contains: search, mode: "insensitive" } },
-        { accountHolder: { contains: search, mode: "insensitive" } },
       ]
     }
 
-    // 📡 Fetch payment methods with user relation
-    const [methods, total] = await Promise.all([
-      prisma.paymentMethod.findMany({
+    // 📡 Fetch tokens with relations
+    const [tokens, total] = await Promise.all([
+      prisma.apiToken.findMany({
         where,
         include: {
           user: {
-            select: { 
-              id: true, 
-              email: true, 
-              name: true,
-              // ✅ يمكن إضافة country هنا إذا وجد في نموذج User
-              // country: true,
-            } 
+            select: { id: true, email: true, name: true }
           }
         },
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
       }),
-      prisma.paymentMethod.count({ where }),
+      prisma.apiToken.count({ where }),
     ])
 
     // ✅ تنسيق البيانات
-    const formattedMethods = methods.map((method) => ({
-      ...method,
-      createdAt: method.createdAt.toISOString(),
+    const formattedTokens = tokens.map((token) => ({
+      ...token,
+      createdAt: token.createdAt.toISOString(),
     }))
 
+    // 📊 Stats - الإحصائيات الكلية دائماً
+    const [globalTotal, globalRecent] = await Promise.all([
+      prisma.apiToken.count(),
+      prisma.apiToken.count({
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // آخر 7 أيام
+          }
+        }
+      }),
+    ])
+
     return NextResponse.json({
-      methods: formattedMethods,
+      tokens: formattedTokens,
       totalPages: fetchAll ? 1 : Math.ceil(total / pageSize),
       currentPage: page,
       total,
+      stats: {
+        totalTokens: globalTotal,
+        recentTokens: globalRecent,
+      },
       ...(userId && { userId }),
     })
 
   } catch (error) {
-    console.error("ADMIN GET PAYMENT METHODS ERROR:", error)
+    console.error("ADMIN GET API TOKENS ERROR:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
 
 
 // ============================================================================
-// ✏️ PATCH - UPDATE PAYMENT METHOD
+// ➕ POST - CREATE NEW API TOKEN (Admin can create on behalf of user)
 // ============================================================================
 
-export async function PATCH(request: Request) {
+export async function POST(request: Request) {
   try {
     const auth = await requireAdmin()
     if (!auth.success) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
-    const methodId = id ? parseInt(id) : NaN
-    
-    if (isNaN(methodId)) {
-      return NextResponse.json({ error: "Invalid method ID" }, { status: 400 })
-    }
-
     const body = await request.json()
-    const { status, paypalEmail, accountHolder } = body
+    const { userId, name } = body
 
-    // 🔍 Check if method exists
-    const existing = await prisma.paymentMethod.findUnique({
-      where: { id: methodId }
-    })
-
-    if (!existing) {
-      return NextResponse.json({ error: "Payment method not found" }, { status: 404 })
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      )
     }
 
-    // ✨ Update method
-    const updateData: any = {}
-    
-    if (status !== undefined) updateData.status = status
-    if (paypalEmail !== undefined) updateData.paypalEmail = paypalEmail
-    if (accountHolder !== undefined) updateData.accountHolder = accountHolder
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
+    // 🔍 Check if user exists
+    const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } })
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const updated = await prisma.paymentMethod.update({
-      where: { id: methodId },
-      data: updateData,
+    // 🔗 Generate secure unique token
+    const generateToken = () => {
+      return `sk_live_${Math.random().toString(36).substring(2, 26)}${Math.random().toString(36).substring(2, 26)}`
+    }
+
+    let token = generateToken()
+    let attempts = 0
+    while (await prisma.apiToken.findUnique({ where: { token } }) && attempts < 10) {
+      token = generateToken()
+      attempts++
+    }
+
+    // ✨ Create token
+    const apiToken = await prisma.apiToken.create({
+       data: {
+        token,
+        name: name?.trim() || null,
+        userId: parseInt(userId),
+      },
       include: {
         user: { select: { id: true, email: true, name: true } }
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      method: {
-        ...updated,
-        createdAt: updated.createdAt.toISOString(),
-      }
-    })
+    return NextResponse.json(
+      { 
+        success: true, 
+        token: {
+          ...apiToken,
+          createdAt: apiToken.createdAt.toISOString(),
+        },
+        // ⚠️ تحذير: أرسل الرمز الكامل مرة واحدة فقط عند الإنشاء
+        warning: "Store this token securely. It will not be shown again."
+      },
+      { status: 201 }
+    )
 
-  } catch (error) {
-    console.error("ADMIN UPDATE PAYMENT METHOD ERROR:", error)
+  } catch (error: any) {
+    // ✅ Handle unique constraint error
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Token generation failed, please try again" },
+        { status: 409 }
+      )
+    }
+    
+    console.error("ADMIN CREATE API TOKEN ERROR:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
 
 
 // ============================================================================
-// 🗑️ DELETE - REMOVE PAYMENT METHOD
+// 🗑️ DELETE - REVOKE API TOKEN
 // ============================================================================
 
 export async function DELETE(request: Request) {
@@ -191,21 +206,21 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
-    const methodId = id ? parseInt(id) : NaN
+    const tokenId = id ? parseInt(id) : NaN
 
-    if (isNaN(methodId)) {
-      return NextResponse.json({ error: "Invalid method ID" }, { status: 400 })
+    if (isNaN(tokenId)) {
+      return NextResponse.json({ error: "Invalid token ID" }, { status: 400 })
     }
 
-    // 🔐 Delete method
-    await prisma.paymentMethod.delete({
-      where: { id: methodId }
+    // 🔐 Delete the token (Cascade will handle related data if any)
+    await prisma.apiToken.delete({
+      where: { id: tokenId }
     })
 
-    return NextResponse.json({ success: true, message: "Payment method deleted successfully" })
+    return NextResponse.json({ success: true, message: "Token revoked successfully" })
 
   } catch (error) {
-    console.error("ADMIN DELETE PAYMENT METHOD ERROR:", error)
+    console.error("ADMIN REVOKE API TOKEN ERROR:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }

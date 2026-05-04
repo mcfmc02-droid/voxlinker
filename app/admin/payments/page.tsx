@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Fragment } from "react"
+import { useEffect, useState, Fragment, useMemo } from "react"
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Building2,
   Mail,
-  Bitcoin
+  Bitcoin,
+  Globe2
 } from "lucide-react"
 
 
@@ -41,6 +42,7 @@ type Withdrawal = {
     id: number
     email: string
     name: string | null
+    country?: string | null  // ✅ يمكن إضافته لاحقاً إذا وجد في نموذج User
     paymentMethod?: PaymentMethod | null
   }
   batch: PayoutBatch | null
@@ -71,6 +73,29 @@ type PaymentStats = {
   averageWithdrawal: number
 }
 
+type GroupedWithdrawals = {
+  country: string
+  withdrawals: Withdrawal[]
+  users: {
+    userId: number
+    userName: string
+    userEmail: string
+    withdrawals: Withdrawal[]
+    stats: {
+      total: number
+      pending: number
+      paid: number
+      totalAmount: number
+    }
+  }[]
+  stats: {
+    total: number
+    pending: number
+    paid: number
+    totalAmount: number
+  }
+}
+
 
 // ============================================================================
 // 🎨 MAIN PAGE COMPONENT
@@ -91,93 +116,102 @@ export default function AdminPaymentsPage() {
   const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED" | "PAID">("ALL")
   const [filterMethod, setFilterMethod] = useState<string>("")
   const [expandedWithdrawal, setExpandedWithdrawal] = useState<number | null>(null)
+  const [expandedCountry, setExpandedCountry] = useState<string | null>(null)
+  const [expandedUser, setExpandedUser] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [showBatchModal, setShowBatchModal] = useState(false)
+
+  // ✅ Pagination مستقل لكل مستخدم
+  const [userPages, setUserPages] = useState<Record<string, number>>({})
+  const [userTotalPages, setUserTotalPages] = useState<Record<string, number>>({})
+  const [loadingUser, setLoadingUser] = useState<string | null>(null)
 
 
   // ============================================================================
-  // 🔄 FETCH DATA
+  // 🔄 FETCH DATA (Global - للدول والمستخدمين فقط)
   // ============================================================================
 
   useEffect(() => {
-    fetchPayments()
-  }, [page, search, filterStatus, filterMethod])
+    fetchGlobalData()
+  }, [search, filterStatus, filterMethod])
 
 
-  const fetchPayments = async () => {
-  try {
-    setLoading(true)
-    
-    // 📡 بناء رابط الاستعلام مع الفلاتر
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      ...(search && { search }),
-      ...(filterStatus !== "ALL" && { status: filterStatus }),
-      ...(filterMethod && { paymentMethod: filterMethod }),
-    })
-
-    const res = await fetch(`/api/admin/payments?${queryParams}`, {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    })
-
-    if (!res.ok) {
-      console.error(`❌ Payments API Error: ${res.status} ${res.statusText}`)
+  const fetchGlobalData = async () => {
+    try {
+      setLoading(true)
       
-      if (res.status === 401) {
-        console.error("🔐 Unauthorized")
-      } else if (res.status === 404) {
-        console.error("🔍 Endpoint not found")
-      }
+      // ✅ نطلب كل البيانات للفلترة الحالية (بدون pagination عالمي)
+      const queryParams = new URLSearchParams({
+        all: 'true',
+        ...(search && { search }),
+        ...(filterStatus !== "ALL" && { status: filterStatus }),
+        ...(filterMethod && { paymentMethod: filterMethod }),
+      })
+
+      const res = await fetch(`/api/admin/payments?${queryParams}`, {
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      })
+
+      if (!res.ok) throw new Error("Failed to fetch payments")
       
-      // ✅ Fallback آمن
-      setWithdrawals([])
-      setBatches([])
-      setStats({
+      const data = await res.json()
+      
+      setWithdrawals(data.withdrawals || [])
+      setBatches(data.batches || [])
+      setStats(data.stats || {
         totalPending: 0,
         pendingRequests: 0,
         totalPaid: 0,
         totalRejected: 0,
         averageWithdrawal: 0,
       })
-      return
+    } catch (error) {
+      console.error("Error fetching payments:", error)
+    } finally {
+      setLoading(false)
     }
-
-    const data = await res.json()
-    
-    // 🔐 تحقق من هيكل الاستجابة
-    if (!data) {
-      console.warn("⚠️ Empty response from payments API")
-      return
-    }
-    
-    console.log(`✅ Loaded ${data.withdrawals?.length || 0} withdrawals, ${data.batches?.length || 0} batches`)
-    
-    setWithdrawals(data.withdrawals || [])
-    setBatches(data.batches || [])
-    setStats(data.stats || {
-      totalPending: 0,
-      pendingRequests: 0,
-      totalPaid: 0,
-      totalRejected: 0,
-      averageWithdrawal: 0,
-    })
-    setTotalPages(data.totalPages || 1)
-    
-  } catch (error) {
-    console.error("🌐 Network error fetching payments:", error)
-    // ✅ Fallback آمن
-    setWithdrawals([])
-    setBatches([])
-  } finally {
-    setLoading(false)
   }
-}
+
+
+  // ============================================================================
+  // 🔄 FETCH USER WITHDRAWALS (للتصفح المستقل داخل كل مستخدم)
+  // ============================================================================
+
+  const fetchUserWithdrawals = async (userKey: string, userId: number, page: number) => {
+    try {
+      setLoadingUser(userKey)
+      
+      const queryParams = new URLSearchParams({
+        userId: userId.toString(),
+        page: page.toString(),
+        pageSize: '20',
+        ...(search && { search }),
+        ...(filterStatus !== "ALL" && { status: filterStatus }),
+        ...(filterMethod && { paymentMethod: filterMethod }),
+      })
+
+      const res = await fetch(`/api/admin/payments?${queryParams}`, {
+        credentials: "include",
+      })
+
+      if (!res.ok) throw new Error("Failed to fetch user withdrawals")
+      
+      const data = await res.json()
+      setUserTotalPages(prev => ({ ...prev, [userKey]: data.totalPages || 1 }))
+      
+      return {
+        withdrawals: data.withdrawals || [],
+        totalPages: data.totalPages || 1
+      }
+    } catch (error) {
+      console.error("Error fetching user withdrawals:", error)
+      return { withdrawals: [], totalPages: 1 }
+    } finally {
+      setLoadingUser(null)
+    }
+  }
 
 
   // ============================================================================
@@ -198,7 +232,7 @@ export default function AdminPaymentsPage() {
 
       if (!res.ok) throw new Error("Failed to update withdrawal")
       
-      // Update local state
+      // ✅ تحديث الحالة محلياً
       setWithdrawals((prev) =>
         prev.map((w) =>
           w.id === id
@@ -211,8 +245,8 @@ export default function AdminPaymentsPage() {
         )
       )
       
-      // Refresh stats
-      fetchPayments()
+      // ✅ إعادة جلب البيانات العالمية لتحديث التجميع
+      fetchGlobalData()
     } catch (error) {
       console.error("Error updating withdrawal:", error)
       alert("Failed to process withdrawal")
@@ -238,7 +272,7 @@ export default function AdminPaymentsPage() {
       const result = await res.json()
       setBatches((prev) => [result.batch, ...prev])
       setShowBatchModal(false)
-      fetchPayments()
+      fetchGlobalData()
     } catch (error) {
       console.error("Error creating batch:", error)
       alert("Failed to create payout batch")
@@ -251,7 +285,6 @@ export default function AdminPaymentsPage() {
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      console.log(`${label} copied`)
     } catch {
       console.error("Failed to copy")
     }
@@ -273,6 +306,87 @@ export default function AdminPaymentsPage() {
       console.error("Export failed:", error)
     }
   }
+
+
+  // ============================================================================
+  // 🎨 GROUPING LOGIC
+  // ============================================================================
+
+  const groupedWithdrawals = useMemo((): GroupedWithdrawals[] => {
+    // 🔹 فلترة أولية
+    let filtered = withdrawals
+    if (filterStatus !== "ALL") {
+      filtered = filtered.filter(w => w.status === filterStatus)
+    }
+    if (filterMethod) {
+      filtered = filtered.filter(w => w.user.paymentMethod?.type === filterMethod)
+    }
+
+    if (search) {
+      const s = search.toLowerCase()
+      filtered = filtered.filter(w => 
+        w.user.email.toLowerCase().includes(s) ||
+        w.user.name?.toLowerCase().includes(s) ||
+        w.id.toString().includes(s)
+      )
+    }
+
+    // 🔹 تجميع حسب الدولة (نستخدم "All Countries" كمؤشر - يمكن تعديله لاحقاً)
+    const byCountry: Record<string, Withdrawal[]> = {}
+    filtered.forEach(withdrawal => {
+      // ✅ يمكن تغيير هذا لجلب الدولة الفعلية من withdrawal.user.country إذا توفرت
+      const country = withdrawal.user.country || "All Countries"
+      if (!byCountry[country]) byCountry[country] = []
+      byCountry[country].push(withdrawal)
+    })
+
+    // 🔹 تجميع فرعي حسب المستخدم داخل كل دولة
+    return Object.entries(byCountry)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([country, countryWithdrawals]) => {
+        const byUser: Record<number, Withdrawal[]> = {}
+        
+        countryWithdrawals.forEach(withdrawal => {
+          const userId = withdrawal.user.id
+          if (!byUser[userId]) byUser[userId] = []
+          byUser[userId].push(withdrawal)
+        })
+
+        const users = Object.entries(byUser).map(([userIdStr, userWithdrawals]) => {
+          const userId = parseInt(userIdStr)
+          const firstWithdrawal = userWithdrawals[0]
+          
+          const userStats = {
+            total: userWithdrawals.length,
+            pending: userWithdrawals.filter(w => w.status === "PENDING").length,
+            paid: userWithdrawals.filter(w => w.status === "PAID").length,
+            totalAmount: userWithdrawals.reduce((sum, w) => sum + w.netAmount, 0)
+          }
+          
+          return {
+            userId,
+            userName: firstWithdrawal.user.name || firstWithdrawal.user.email,
+            userEmail: firstWithdrawal.user.email,
+            withdrawals: userWithdrawals,
+            stats: userStats
+          }
+        }).sort((a, b) => b.stats.totalAmount - a.stats.totalAmount) // الأغنى أولاً
+
+        const countryStats = {
+          total: countryWithdrawals.length,
+          pending: countryWithdrawals.filter(w => w.status === "PENDING").length,
+          paid: countryWithdrawals.filter(w => w.status === "PAID").length,
+          totalAmount: countryWithdrawals.reduce((sum, w) => sum + w.netAmount, 0)
+        }
+
+        return {
+          country,
+          withdrawals: countryWithdrawals,
+          users,
+          stats: countryStats
+        }
+      })
+  }, [withdrawals, search, filterStatus, filterMethod])
 
 
   // ============================================================================
@@ -314,12 +428,38 @@ export default function AdminPaymentsPage() {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
   }
 
+  const toggleCountry = (country: string) => {
+    setExpandedCountry(expandedCountry === country ? null : country)
+    if (expandedCountry !== country) setExpandedUser(null)
+  }
+
+  const toggleUser = (userId: number) => {
+    const key = `user-${userId}`
+    
+    if (expandedUser === key) {
+      setExpandedUser(null)
+    } else {
+      setExpandedUser(key)
+      
+      // ✅ عند فتح مستخدم، جلب أول صفحة من سحبته إذا لم تكن محملة
+      if (!userPages[key]) {
+        setUserPages(prev => ({ ...prev, [key]: 1 }))
+        fetchUserWithdrawals(key, userId, 1)
+      }
+    }
+  }
+
+  const changeUserPage = (userKey: string, userId: number, newPage: number) => {
+    setUserPages(prev => ({ ...prev, [userKey]: newPage }))
+    fetchUserWithdrawals(userKey, userId, newPage)
+  }
+
 
   // ============================================================================
   // 🎨 RENDER LOADING
   // ============================================================================
 
-  if (loading && page === 1) {
+  if (loading) {
     return (
       <div className="min-h-screen p-10 flex items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -336,13 +476,13 @@ export default function AdminPaymentsPage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 md:p-6 lg:p-10">
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* ================= HEADER ================= */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Payments Center</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">Payments Center</h1>
             <p className="text-sm text-gray-500 mt-1">Manage withdrawals, payout batches, and payment methods</p>
           </div>
 
@@ -379,7 +519,7 @@ export default function AdminPaymentsPage() {
 
 
         {/* ================= STATS CARDS ================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard 
             title="Total Pending" 
             value={formatCurrency(stats.totalPending)} 
@@ -413,7 +553,7 @@ export default function AdminPaymentsPage() {
               <input
                 placeholder="Search by email, name, or withdrawal ID..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                 className="
                   w-full pl-10 pr-4 py-2.5 text-sm
                   bg-white border border-gray-200 rounded-xl
@@ -427,7 +567,7 @@ export default function AdminPaymentsPage() {
             {/* Status Filter */}
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as any)}
               className="
                 px-4 py-2.5 text-sm
                 bg-white border border-gray-200 rounded-xl
@@ -445,7 +585,7 @@ export default function AdminPaymentsPage() {
             {/* Payment Method Filter */}
             <select
               value={filterMethod}
-              onChange={(e) => setFilterMethod(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterMethod(e.target.value)}
               className="
                 px-4 py-2.5 text-sm
                 bg-white border border-gray-200 rounded-xl
@@ -480,315 +620,299 @@ export default function AdminPaymentsPage() {
         </div>
 
 
-        {/* ================= WITHDRAWALS TABLE ================= */}
-        <div className="
-          bg-white/80 backdrop-blur-xl
-          rounded-2xl
-          shadow-[0_4px_24px_rgba(0,0,0,0.06)]
-          border border-gray-100
-          overflow-hidden
-        ">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-700">Withdrawal Requests</h3>
-            <span className="text-xs text-gray-400">{withdrawals.length} requests</span>
-          </div>
-
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-400 uppercase tracking-wide bg-gray-50/80">
-              <tr>
-                <th className="px-6 py-4 text-left font-medium">User</th>
-                <th className="px-6 py-4 text-left font-medium">Amount</th>
-                <th className="px-6 py-4 text-left font-medium">Payment Method</th>
-                <th className="px-6 py-4 text-left font-medium">Status</th>
-                <th className="px-6 py-4 text-left font-medium">Date</th>
-                <th className="px-6 py-4 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {!loading && withdrawals.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-16 text-gray-400">
-                    <div className="flex flex-col items-center gap-3">
-                      <Wallet className="w-10 h-10 text-gray-300" />
-                      <p>No withdrawal requests found</p>
-                    </div>
-                  </td>
-                </tr>
+        {/* ================= GROUPED WITHDRAWALS SECTIONS ================= */}
+        <div className="space-y-6">
+          {groupedWithdrawals.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Wallet className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+              <p>No withdrawal requests found</p>
+              {(search || filterStatus !== "ALL" || filterMethod) && (
+                <button 
+                  onClick={() => { setSearch(""); setFilterStatus("ALL"); setFilterMethod("") }}
+                  className="mt-2 text-sm text-[#ff9a6c] hover:underline cursor-pointer"
+                >
+                  Clear filters →
+                </button>
               )}
-
-              {withdrawals.map((withdrawal) => (
-                <Fragment key={withdrawal.id}>
-                  {/* ================= MAIN ROW ================= */}
-                  <tr 
-                    className="border-t border-gray-100 hover:bg-gray-50/60 transition-all duration-150 cursor-pointer"
-                    onClick={() => setExpandedWithdrawal(expandedWithdrawal === withdrawal.id ? null : withdrawal.id)}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 text-xs font-medium">
-                          {(withdrawal.user.name?.[0] || withdrawal.user.email[0]).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{withdrawal.user.name || "Unnamed"}</p>
-                          <p className="text-xs text-gray-400">{withdrawal.user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{formatCurrency(withdrawal.netAmount)}</p>
-                        {withdrawal.taxAmount > 0 && (
-                          <p className="text-xs text-gray-400">Tax: {formatCurrency(withdrawal.taxAmount)}</p>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      {withdrawal.user.paymentMethod ? (
-                        <div className="flex items-center gap-2">
-                          {getPaymentMethodIcon(withdrawal.user.paymentMethod.type)}
-                          <span className="text-sm text-gray-700 capitalize">
-                            {withdrawal.user.paymentMethod.type.toLowerCase()}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">Not set</span>
+            </div>
+          ) : (
+            groupedWithdrawals.map((group) => (
+              <div key={group.country} className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                
+                {/* Country Header */}
+                <button
+                  onClick={() => toggleCountry(group.country)}
+                  className="w-full px-4 sm:px-6 py-4 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-all duration-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe2 className="w-5 h-5 text-[#ff9a6c]" />
+                    <div className="text-left">
+                      <h3 className="font-semibold text-gray-900">{group.country}</h3>
+                      <p className="text-xs text-gray-500">
+                        {group.stats.total} withdrawals • {group.users.length} users • {formatCurrency(group.stats.totalAmount)} total
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-2 text-xs">
+                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">
+                        {group.stats.pending} pending
+                      </span>
+                      {group.stats.paid > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+                          {group.stats.paid} paid
+                        </span>
                       )}
-                    </td>
+                    </div>
+                    <ChevronUp className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${expandedCountry === group.country ? "rotate-180" : ""}`} />
+                  </div>
+                </button>
 
-                    <td className="px-6 py-4">
-                      {getStatusBadge(withdrawal.status)}
-                    </td>
-
-                    <td className="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">
-                      {new Date(withdrawal.createdAt).toLocaleDateString()}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        {withdrawal.status === "PENDING" && (
-                          <>
-                            <ActionButton
-                              label="Approve"
-                              variant="primary"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                updateWithdrawal(withdrawal.id, "approve")
-                              }}
-                              loading={actionLoading === `withdrawal-${withdrawal.id}-approve`}
-                            />
-                            <ActionButton
-                              label="Reject"
-                              variant="gray"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                updateWithdrawal(withdrawal.id, "reject")
-                              }}
-                              loading={actionLoading === `withdrawal-${withdrawal.id}-reject`}
-                            />
-                          </>
-                        )}
-                        {withdrawal.status === "APPROVED" && (
-                          <ActionButton
-                            label="Mark Paid"
-                            variant="primary"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              updateWithdrawal(withdrawal.id, "pay")
-                            }}
-                            loading={actionLoading === `withdrawal-${withdrawal.id}-pay`}
-                          />
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setExpandedWithdrawal(expandedWithdrawal === withdrawal.id ? null : withdrawal.id)
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-gray-200 transition cursor-pointer text-gray-400"
-                        >
-                          {expandedWithdrawal === withdrawal.id ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-
-
-                  {/* ================= EXPANDED DETAILS ROW ================= */}
-                  {expandedWithdrawal === withdrawal.id && (
-                    <tr className="bg-gray-50/60 border-t border-gray-100">
-                      <td colSpan={6} className="px-6 py-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Country Content - Collapsible */}
+                {expandedCountry === group.country && (
+                  <div className="px-4 sm:px-6 pb-4 space-y-4">
+                    
+                    {/* Users within Country */}
+                    {group.users.map((userGroup) => {
+                      const userKey = `user-${userGroup.userId}`
+                      const isUserExpanded = expandedUser === userKey
+                      const currentPage = userPages[userKey] || 1
+                      const totalPages = userTotalPages[userKey] || 1
+                      
+                      return (
+                        <div key={userGroup.userId} className="border border-gray-100 rounded-xl overflow-hidden">
                           
-                          {/* Withdrawal Details */}
-                          <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <Wallet className="w-4 h-4" />
-                              Withdrawal Details
-                            </h4>
-                            <div className="space-y-3 text-sm">
-                              <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                <p className="text-xs text-gray-500 mb-1">Withdrawal ID</p>
-                                <div className="flex items-center gap-2">
-                                  <code className="px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs">
-                                    #{withdrawal.id}
-                                  </code>
+                          {/* User Header */}
+                          <button
+                            onClick={() => toggleUser(userGroup.userId)}
+                            className="w-full px-4 py-3 flex items-center justify-between bg-gray-50/50 hover:bg-gray-100/50 transition-all duration-200 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffb48a] to-[#ff9a6c] flex items-center justify-center text-white text-xs font-medium">
+                                {(userGroup.userName[0] || "U").toUpperCase()}
+                              </div>
+                              <div className="text-left">
+                                <p className="font-medium text-gray-900 text-sm">{userGroup.userName}</p>
+                                <p className="text-xs text-gray-500">{userGroup.userEmail}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+                                <span>{userGroup.stats.total} withdrawals</span>
+                                <span className="text-green-600">• {formatCurrency(userGroup.stats.totalAmount)}</span>
+                                {userGroup.stats.pending > 0 && (
+                                  <span className="text-yellow-600">• {userGroup.stats.pending} pending</span>
+                                )}
+                              </div>
+                              <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isUserExpanded ? "rotate-180" : ""}`} />
+                            </div>
+                          </button>
+
+                          {/* User Withdrawals Table with Independent Pagination */}
+                          {isUserExpanded && (
+                            <div className="space-y-4">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[700px]">
+                                  <thead className="text-xs text-gray-400 uppercase tracking-wide bg-gray-50/80">
+                                    <tr>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium">Amount</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden sm:table-cell">Payment Method</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium">Status</th>
+                                      <th className="px-4 sm:px-6 py-3 text-left font-medium hidden md:table-cell">Date</th>
+                                      <th className="px-4 sm:px-6 py-3 text-right font-medium w-[140px]">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {loadingUser === userKey ? (
+                                      <tr>
+                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                          <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                          <span className="text-xs ml-2">Loading withdrawals...</span>
+                                        </td>
+                                      </tr>
+                                    ) : (
+                                      userGroup.withdrawals.slice((currentPage - 1) * 20, currentPage * 20).map((withdrawal) => (
+                                        <Fragment key={withdrawal.id}>
+                                          <tr 
+                                            className="border-t border-gray-100 hover:bg-gray-50/60 transition-all duration-150 cursor-pointer"
+                                            onClick={() => setExpandedWithdrawal(expandedWithdrawal === withdrawal.id ? null : withdrawal.id)}
+                                          >
+                                            <td className="px-4 sm:px-6 py-4">
+                                              <div>
+                                                <p className="font-semibold text-gray-900">{formatCurrency(withdrawal.netAmount)}</p>
+                                                {withdrawal.taxAmount > 0 && (
+                                                  <p className="text-[10px] text-gray-400">Tax: {formatCurrency(withdrawal.taxAmount)}</p>
+                                                )}
+                                              </div>
+                                            </td>
+
+                                            <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
+                                              {withdrawal.user.paymentMethod ? (
+                                                <div className="flex items-center gap-2">
+                                                  {getPaymentMethodIcon(withdrawal.user.paymentMethod.type)}
+                                                  <span className="text-sm text-gray-700 capitalize">
+                                                    {withdrawal.user.paymentMethod.type.toLowerCase()}
+                                                  </span>
+                                                </div>
+                                              ) : (
+                                                <span className="text-xs text-gray-400">Not set</span>
+                                              )}
+                                            </td>
+
+                                            <td className="px-4 sm:px-6 py-4">
+                                              {getStatusBadge(withdrawal.status)}
+                                            </td>
+
+                                            <td className="px-4 sm:px-6 py-4 text-gray-400 text-xs whitespace-nowrap hidden md:table-cell">
+                                              {new Date(withdrawal.createdAt).toLocaleDateString()}
+                                            </td>
+
+                                            <td className="px-4 sm:px-6 py-4">
+                                              <div className="flex items-center justify-end gap-1">
+                                                {withdrawal.status === "PENDING" && (
+                                                  <>
+                                                    <ActionButton
+                                                      label="Approve"
+                                                      variant="primary"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        updateWithdrawal(withdrawal.id, "approve")
+                                                      }}
+                                                      loading={actionLoading === `withdrawal-${withdrawal.id}-approve`}
+                                                    />
+                                                    <ActionButton
+                                                      label="Reject"
+                                                      variant="gray"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        updateWithdrawal(withdrawal.id, "reject")
+                                                      }}
+                                                      loading={actionLoading === `withdrawal-${withdrawal.id}-reject`}
+                                                    />
+                                                  </>
+                                                )}
+                                                {withdrawal.status === "APPROVED" && (
+                                                  <ActionButton
+                                                    label="Mark Paid"
+                                                    variant="primary"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation()
+                                                      updateWithdrawal(withdrawal.id, "pay")
+                                                    }}
+                                                    loading={actionLoading === `withdrawal-${withdrawal.id}-pay`}
+                                                  />
+                                                )}
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setExpandedWithdrawal(expandedWithdrawal === withdrawal.id ? null : withdrawal.id)
+                                                  }}
+                                                  className="p-1.5 rounded-lg hover:bg-gray-200 transition cursor-pointer text-gray-400"
+                                                >
+                                                  {expandedWithdrawal === withdrawal.id ? (
+                                                    <ChevronUp className="w-4 h-4" />
+                                                  ) : (
+                                                    <ChevronDown className="w-4 h-4" />
+                                                  )}
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+
+                                          {/* Expanded Details Row */}
+                                          {expandedWithdrawal === withdrawal.id && (
+                                            <tr className="bg-gray-50/80 border-t border-gray-100">
+                                              <td colSpan={5} className="px-4 sm:px-6 py-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                                                  <div className="space-y-2">
+                                                    <p className="text-[10px] text-gray-500 font-medium">Withdrawal Details</p>
+                                                    <div className="bg-white p-2 rounded-lg border border-gray-100 space-y-1">
+                                                      <p><span className="text-gray-400">ID:</span> <span className="font-mono">#{withdrawal.id}</span></p>
+                                                      <p><span className="text-gray-400">Gross:</span> {formatCurrency(withdrawal.amount)}</p>
+                                                      <p><span className="text-gray-400">Net:</span> <span className="text-green-600 font-medium">{formatCurrency(withdrawal.netAmount)}</span></p>
+                                                      {withdrawal.taxAmount > 0 && (
+                                                        <p><span className="text-gray-400">Tax:</span> <span className="text-red-600">-{formatCurrency(withdrawal.taxAmount)}</span></p>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <p className="text-[10px] text-gray-500 font-medium">Payment Method</p>
+                                                    <div className="bg-white p-2 rounded-lg border border-gray-100 space-y-1">
+                                                      {withdrawal.user.paymentMethod ? (
+                                                        <>
+                                                          <p><span className="text-gray-400">Type:</span> {withdrawal.user.paymentMethod.type}</p>
+                                                          {withdrawal.user.paymentMethod.paypalEmail && (
+                                                            <p><span className="text-gray-400">Email:</span> {withdrawal.user.paymentMethod.paypalEmail}</p>
+                                                          )}
+                                                          {withdrawal.user.paymentMethod.accountHolder && (
+                                                            <p><span className="text-gray-400">Holder:</span> {withdrawal.user.paymentMethod.accountHolder}</p>
+                                                          )}
+                                                          <p><span className="text-gray-400">Status:</span> {withdrawal.user.paymentMethod.status}</p>
+                                                        </>
+                                                      ) : (
+                                                        <p className="text-gray-400">No payment method set</p>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <p className="text-[10px] text-gray-500 font-medium">Timeline</p>
+                                                    <div className="bg-white p-2 rounded-lg border border-gray-100 space-y-1">
+                                                      <p><span className="text-gray-400">Requested:</span> {new Date(withdrawal.createdAt).toLocaleString()}</p>
+                                                      {withdrawal.processedAt && (
+                                                        <p><span className="text-gray-400">Processed:</span> {new Date(withdrawal.processedAt).toLocaleString()}</p>
+                                                      )}
+                                                      {withdrawal.batch && (
+                                                        <p><span className="text-gray-400">Batch:</span> #{withdrawal.batch.id}</p>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </Fragment>
+                                      ))
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                              
+                              {/* ✅ Pagination خاص بهذا المستخدم فقط */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg border border-gray-100">
                                   <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      copyToClipboard(`#${withdrawal.id}`, "Withdrawal ID")
-                                    }}
-                                    className="p-1 hover:bg-gray-200 rounded cursor-pointer"
+                                    onClick={() => changeUserPage(userKey, userGroup.userId, Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1 || loadingUser === userKey}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
                                   >
-                                    <Copy className="w-3.5 h-3.5" />
+                                    <ChevronUp className="w-3 h-3 rotate-90" />
+                                    Previous
+                                  </button>
+                                  
+                                  <span className="text-xs text-gray-600">
+                                    Page {currentPage} of {totalPages}
+                                  </span>
+                                  
+                                  <button
+                                    onClick={() => changeUserPage(userKey, userGroup.userId, Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages || loadingUser === userKey}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
+                                  >
+                                    Next
+                                    <ChevronUp className="w-3 h-3 -rotate-90" />
                                   </button>
                                 </div>
-                              </div>
-                              <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                <p className="text-xs text-gray-500 mb-1">Gross Amount</p>
-                                <p className="font-semibold text-gray-900">{formatCurrency(withdrawal.amount)}</p>
-                              </div>
-                              <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                <p className="text-xs text-gray-500 mb-1">Net Amount (After Tax)</p>
-                                <p className="font-semibold text-green-600">{formatCurrency(withdrawal.netAmount)}</p>
-                              </div>
-                              {withdrawal.taxAmount > 0 && (
-                                <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                  <p className="text-xs text-gray-500 mb-1">Tax Withheld</p>
-                                  <p className="font-semibold text-red-600">-{formatCurrency(withdrawal.taxAmount)}</p>
-                                </div>
                               )}
                             </div>
-                          </div>
-
-                          {/* Payment Method Details */}
-                          <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <CreditCard className="w-4 h-4" />
-                              Payment Details
-                            </h4>
-                            {withdrawal.user.paymentMethod ? (
-                              <div className="space-y-3 text-sm">
-                                <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                  <p className="text-xs text-gray-500 mb-1">Method Type</p>
-                                  <div className="flex items-center gap-2">
-                                    {getPaymentMethodIcon(withdrawal.user.paymentMethod.type)}
-                                    <span className="font-medium capitalize">
-                                      {withdrawal.user.paymentMethod.type.toLowerCase()}
-                                    </span>
-                                  </div>
-                                </div>
-                                {withdrawal.user.paymentMethod?.paypalEmail && (
-  <div className="bg-white p-3 rounded-xl border border-gray-100">
-    <p className="text-xs text-gray-500 mb-1">PayPal Email</p>
-    <div className="flex items-center gap-2">
-      <span className="text-gray-700">{withdrawal.user.paymentMethod?.paypalEmail}</span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          copyToClipboard(withdrawal.user.paymentMethod?.paypalEmail || "", "PayPal Email")
-        }}
-        className="p-1 hover:bg-gray-200 rounded cursor-pointer"
-      >
-        <Copy className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  </div>
-)}
-
-                                {withdrawal.user.paymentMethod.accountHolder && (
-                                  <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                    <p className="text-xs text-gray-500 mb-1">Account Holder</p>
-                                    <p className="text-gray-700">{withdrawal.user.paymentMethod.accountHolder}</p>
-                                  </div>
-                                )}
-                                <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                  <p className="text-xs text-gray-500 mb-1">Method Status</p>
-                                  <span className={`
-                                    inline-flex items-center px-2 py-1 text-xs rounded-md border
-                                    ${withdrawal.user.paymentMethod.status === "VERIFIED" 
-                                      ? "bg-green-100 text-green-700 border-green-200" 
-                                      : "bg-yellow-100 text-yellow-700 border-yellow-200"}
-                                  `}>
-                                    {withdrawal.user.paymentMethod.status}
-                                  </span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                                <div className="flex items-start gap-3">
-                                  <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium text-yellow-800">No Payment Method</p>
-                                    <p className="text-xs text-yellow-600 mt-1">
-                                      User needs to connect a payment method before withdrawal can be processed.
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Timeline & Metadata */}
-                          <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              Timeline
-                            </h4>
-                            <div className="space-y-3 text-sm">
-                              <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                <p className="text-xs text-gray-500 mb-1">Requested At</p>
-                                <p className="text-gray-700">
-                                  {new Date(withdrawal.createdAt).toLocaleString("en-US", {
-                                    weekday: "short",
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  })}
-                                </p>
-                              </div>
-                              {withdrawal.processedAt && (
-                                <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                  <p className="text-xs text-gray-500 mb-1">Processed At</p>
-                                  <p className="text-gray-700">
-                                    {new Date(withdrawal.processedAt).toLocaleString("en-US", {
-                                      weekday: "short",
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit"
-                                    })}
-                                  </p>
-                                </div>
-                              )}
-                              {withdrawal.batch && (
-                                <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                  <p className="text-xs text-gray-500 mb-1">Payout Batch</p>
-                                  <p className="font-medium text-gray-900">Batch #{withdrawal.batch.id}</p>
-                                  <p className="text-xs text-gray-400">
-                                    {formatCurrency(withdrawal.batch.totalAmount)} • {withdrawal.batch.status}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
+                          )}
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
 
@@ -842,49 +966,7 @@ export default function AdminPaymentsPage() {
         )}
 
 
-        {/* ================= PAGINATION ================= */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <button
-              disabled={page === 1 || loading}
-              onClick={() => setPage((p) => p - 1)}
-              className="
-                inline-flex items-center gap-2
-                px-4 py-2.5 text-sm rounded-xl
-                bg-white border border-gray-200 text-gray-700
-                hover:bg-gray-50 hover:border-gray-300
-                disabled:opacity-40 disabled:cursor-not-allowed
-                transition-all duration-200 cursor-pointer
-              "
-            >
-              <ChevronUp className="w-4 h-4 rotate-90" />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>Page</span>
-              <span className="font-medium text-gray-900">{page}</span>
-              <span>of</span>
-              <span className="font-medium text-gray-900">{totalPages}</span>
-            </div>
-
-            <button
-              disabled={page === totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-              className="
-                inline-flex items-center gap-2
-                px-4 py-2.5 text-sm rounded-xl
-                bg-white border border-gray-200 text-gray-700
-                hover:bg-gray-50 hover:border-gray-300
-                disabled:opacity-40 disabled:cursor-not-allowed
-                transition-all duration-200 cursor-pointer
-              "
-            >
-              Next
-              <ChevronUp className="w-4 h-4 -rotate-90" />
-            </button>
-          </div>
-        )}
+        {/* ✅ تمت إزالة Global Pagination تماماً - كل التنقل الآن داخل المستخدم */}
 
       </div>
 
@@ -970,18 +1052,23 @@ function StatCard({
   highlight?: boolean
 }) {
   return (
-    <div className="bg-white/80 backdrop-blur rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
+    <div className={`
+      bg-white/80 backdrop-blur rounded-2xl p-4 sm:p-5 border
+      transition-all duration-200
+      ${highlight 
+        ? "border-[#ff9a6c]/30 shadow-[0_4px_20px_rgba(255,154,108,0.15)]" 
+        : "border-gray-100 shadow-sm hover:shadow-md"}
+    `}>
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400 uppercase tracking-wide">{title}</p>
         <div className="text-gray-500">{icon}</div>
       </div>
-      <p className={`text-2xl font-semibold mt-3 ${highlight ? "text-[#ff9a6c]" : "text-gray-900"}`}>
+      <p className={`text-xl sm:text-2xl font-semibold mt-2 ${highlight ? "text-[#ff9a6c]" : "text-gray-900"}`}>
         {value}
       </p>
     </div>
   )
 }
-
 
 function ActionButton({
   label,
